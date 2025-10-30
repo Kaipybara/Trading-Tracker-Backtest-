@@ -1,0 +1,2571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Trading Tracker 5.3</title>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <style>
+    :root{
+      --bg:#0f1222;
+      --bg-soft:#171a2d;
+      --card:#1d2140;
+      --card-2:#1a1e3a;
+      --text:#e7e9f0;
+      --muted:#9aa1c6;
+      --line:#2b315d;
+      --green:#35cc7a;
+      --red:#ff5a6b;
+      --amber:#ffc857;
+      --blue:#4ea1ff;
+      --shadow:0 10px 30px rgba(0,0,0,.35);
+      --radius:12px;
+      --gap:16px;
+      --block-gap:22px;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background:
+        radial-gradient(1200px 1200px at 80% -20%, #3f3cbb22 0%, transparent 60%),
+        radial-gradient(1200px 1200px at -10% 120%, #4ea1ff22 0%, transparent 60%),
+        var(--bg);
+      color:var(--text);
+      font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, system-ui, Avenir, "Helvetica Neue", Arial, "Noto Sans";
+      line-height:1.35;
+    }
+
+    /* ---------- Top App Bar ---------- */
+    .appbar{
+      position:sticky; top:0; z-index:40;
+      backdrop-filter:saturate(120%) blur(12px);
+      background:rgba(15,18,34,.7);
+      border-bottom:1px solid var(--line);
+    }
+    .appbar-inner{
+      max-width:1300px; margin:0 auto; padding:12px 16px;
+      display:flex; gap:16px; align-items:center; flex-wrap:wrap;
+    }
+    .brand{font-weight:700; letter-spacing:.2px; font-size:18px; margin-right:auto; display:flex; align-items:center; gap:10px}
+    .brand small{color:var(--muted); font-weight:500}
+
+    .seg{
+      display:inline-flex; background:var(--card); border:1px solid var(--line); border-radius:999px; overflow:hidden;
+    }
+    .seg button{
+      padding:8px 14px; border:0; background:transparent; color:var(--muted); cursor:pointer; font-weight:700;
+    }
+    .seg button.active{background:var(--blue); color:white}
+
+    .btn{
+      border:0; background:var(--card-2); color:var(--text); padding:10px 14px; border-radius:10px; cursor:pointer; font-weight:700; box-shadow:var(--shadow);
+    }
+    .btn:active{transform:translateY(1px)}
+    .btn.blue{background:linear-gradient(180deg, #4ea1ff, #277ae3)}
+    .btn.soft{background:var(--card); border:1px solid var(--line); box-shadow:none; color:var(--muted); font-weight:600}
+    .btn.green{background:linear-gradient(180deg, #27be69, #149a53)}
+    .btn.red{background:linear-gradient(180deg, #ff5a6b, #d93c4f)}
+    .btn.big{width:100%; padding:14px 16px; font-size:18px; font-weight:900; border-radius:12px;}
+
+    .toolbar{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+    .kbd{padding:2px 6px; border:1px solid var(--line); border-bottom-width:2px; background:var(--bg-soft); border-radius:6px; color:var(--muted); font-size:12px}
+
+    input, select, textarea{
+      background:var(--bg-soft); border:1px solid var(--line); color:var(--text); border-radius:8px; padding:8px 10px; outline:none; min-height:36px;
+    }
+    label{color:var(--muted); font-size:12px}
+
+    /* ---------- Page ---------- */
+    .shell{max-width:1300px; margin:0 auto; padding:18px 16px 80px}
+    .tabcontent{display:none; margin-top:16px}
+    .tabcontent.active{display:block; animation:fade .25s ease}
+    @keyframes fade{from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:translateY(0)}}
+
+    .grid{display:grid; gap:var(--gap)}
+    .grid.cols-2{grid-template-columns:2fr 3fr}
+    .grid.cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .grid.cols-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+    .grid.cols-5{grid-template-columns:repeat(5,minmax(0,1fr))}
+    @media (max-width:1100px){ .grid.cols-4{grid-template-columns:repeat(2,1fr)} }
+    @media (max-width:900px){ .grid.cols-2{grid-template-columns:1fr} .grid.cols-3{grid-template-columns:repeat(2,1fr)} }
+    @media (max-width:680px){ .grid.cols-3{grid-template-columns:1fr} }
+
+    .stack > .card{ margin-bottom:var(--block-gap); }
+    .stack .grid{ gap:calc(var(--gap) + 6px); }
+
+    .card{
+      background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:16px; box-shadow:var(--shadow)
+    }
+    .card h3{margin:0 0 12px 0; font-size:16px; letter-spacing:.2px}
+    .kpis{display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:var(--gap)}
+    @media (max-width:1000px){ .kpis{grid-template-columns:repeat(2,1fr)} }
+    @media (max-width:600px){ .kpis{grid-template-columns:1fr} }
+    .kpi{background:var(--card-2); border:1px solid var(--line); border-radius:12px; padding:14px; overflow:hidden}
+    .kpi .label{color:var(--muted); font-size:12px; margin-bottom:6px}
+    .kpi .value{font-size:22px; font-weight:800; word-break:break-word}
+
+    table{width:100%; border-collapse:collapse}
+    th, td{padding:10px 8px; border-bottom:1px solid var(--line); text-align:left; font-size:14px}
+    thead th{color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.4px}
+    tbody tr:hover{background:rgba(255,255,255,.03)}
+    thead th.sticky{position:sticky; top:0; z-index:1; background:var(--card)}
+
+    /* ---------- Quick Entry Dock ---------- */
+    .quick-dock{
+      position:sticky; top:76px; z-index:35;
+      background:linear-gradient(180deg, rgba(26,30,58,.9), rgba(26,30,58,.86));
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+      box-shadow:var(--shadow);
+      display:grid;
+      grid-template-columns: 1.2fr 1.6fr 1.2fr 1.2fr;
+      gap:10px;
+      align-items:center;
+      margin-bottom:var(--block-gap);
+    }
+    @media (max-width:980px){ .quick-dock{ grid-template-columns:1.2fr 1.6fr 1fr 1fr; } }
+    @media (max-width:760px){ .quick-dock{ grid-template-columns:1fr; top:64px } }
+    .quick-dock.hidden{display:none}
+    .dock-group{
+      display:flex; align-items:center; gap:8px; width:100%;
+      background:var(--bg-soft); border:1px solid var(--line); border-radius:10px; padding:8px;
+    }
+    .dock-group .seg{background:transparent; border:0}
+    .dock-group .seg button{min-width:92px}
+    .icon-btn{background:transparent; border:0; color:var(--muted); cursor:pointer; font-size:18px}
+    .icon-btn:hover{color:#fff}
+    .hint{color:var(--muted); font-size:12px; margin-top:4px; text-align:center}
+
+    /* ---------- Screenshot area ---------- */
+    .shot-card .shot-drop{
+      border:2px dashed #3a4177; border-radius:12px;
+      background:linear-gradient(0deg, #161a33bb, #161a33aa);
+      padding:12px; min-height:120px; display:flex; align-items:center; justify-content:center; text-align:center; color:var(--muted);
+      cursor:text;
+    }
+    .shot-card .shot-drop.focus{outline:2px solid var(--blue); outline-offset:2px}
+    .shot-card .shot-img{display:block; width:100%; height:auto; border-radius:10px; margin-top:12px; border:1px solid var(--line)}
+    .shot-tools{display:flex; gap:8px; align-items:center; justify-content:flex-end; margin-top:8px}
+
+    .muted{color:var(--muted)}
+    .sr{position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0}
+
+    /* ---------- Toasts ---------- */
+    .toast{position:fixed; right:16px; bottom:16px; z-index:60}
+    .toast .t{background:#1e223f; color:#e7e9f0; border:1px solid #2b315d; border-radius:10px; padding:10px 12px; margin-top:8px; box-shadow:var(--shadow); font-size:14px}
+    .toast .undo{margin-left:10px; color:#4ea1ff; cursor:pointer; font-weight:700}
+
+    /* ---------- Analytics ---------- */
+    .progress{height:8px; border-radius:999px; background:#1c2144; border:1px solid #2b315d; overflow:hidden}
+    .progress > div{height:100%; background:linear-gradient(90deg, #4ea1ff, #277ae3); width:0%}
+    .code{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size:12px; color:#cfd2e6}
+
+    /* ---------- Unit config panel ---------- */
+    .unit-config{
+      display:none; max-width:1300px; margin:8px auto 0;
+      background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px;
+      box-shadow:var(--shadow);
+    }
+    .unit-config.show{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+    .unit-config .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+    .unit-config .note{color:var(--muted); font-size:12px}
+
+    /* =========================================================
+       NEW IN v5.2 — Tags, All Trades, Bulk Ops, Preview Pane
+       ========================================================= */
+
+    /* Tag chips */
+    .chip{
+      display:inline-flex; align-items:center; gap:6px;
+      padding:2px 8px; border-radius:999px;
+      background:#262a52; border:1px solid var(--line);
+      font-size:12px; color:#cfd2e6; margin:2px 6px 2px 0;
+      white-space:nowrap;
+    }
+    .chip .xbtn{cursor:pointer; font-size:14px; line-height:1}
+    .chip-input{
+      display:flex; flex-wrap:wrap; gap:6px; padding:8px;
+      background:var(--bg-soft); border:1px solid var(--line); border-radius:10px;
+      min-height:40px;
+    }
+    .chip-input input{
+      min-width:120px; flex:1 0 120px; background:transparent; border:0; outline:none; color:var(--text); padding:4px 6px; min-height:auto;
+    }
+
+    /* Modal (Tag Manager) */
+    .modal-backdrop{
+      position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:90; display:none;
+    }
+    .modal-backdrop.show{display:block}
+    .modal{
+      position:fixed; left:50%; top:10%;
+      transform:translateX(-50%);
+      width:min(640px, 92vw);
+      background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; z-index:95; display:none;
+      box-shadow:var(--shadow);
+    }
+    .modal.show{display:block}
+    .modal h4{margin:0 0 10px 0}
+    .modal .row{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:8px 0}
+    .modal .list{
+      background:var(--bg-soft); border:1px solid var(--line); border-radius:10px; padding:8px; max-height:240px; overflow:auto;
+    }
+    .modal .list .item{
+      display:flex; align-items:center; justify-content:space-between; gap:8px;
+      padding:8px; border-bottom:1px dashed #2b315d;
+    }
+    .modal .list .item:last-child{border-bottom:0}
+
+    /* All Trades layout */
+    .alltrades-layout{
+      display:grid; grid-template-columns: 2.2fr 1.3fr; gap:var(--gap);
+    }
+    @media (max-width:1100px){
+      .alltrades-layout{ grid-template-columns: 1fr; }
+    }
+    .bulkbar{
+      display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+      background:var(--bg-soft); border:1px solid var(--line); border-radius:10px; padding:8px;
+    }
+
+    .col-select{ width:38px }
+    .col-pic{ width:64px; text-align:center }
+    .pic-icon{
+      width:36px; height:24px; border-radius:6px; display:inline-flex; align-items:center; justify-content:center;
+      background:#2a2f57; border:1px solid var(--line); cursor:pointer; user-select:none;
+      font-size:12px; color:#9fb3ff;
+    }
+    .pic-icon:hover{ outline:1px solid #4ea1ff; }
+
+    .preview-pane{
+      position:sticky; top:76px;
+      background:var(--card-2); border:1px solid var(--line); border-radius:12px; padding:10px; min-height:240px;
+    }
+    .preview-pane .meta{ color:var(--muted); font-size:12px; margin-bottom:6px; display:flex; gap:10px; flex-wrap:wrap }
+    .preview-holder{
+      width:100%; height:70vh; min-height:220px; border-radius:10px; background:#121430; border:1px dashed #2b315d; overflow:hidden;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .preview-holder img{ width:100%; height:100%; object-fit:contain; display:block }
+
+    /* Filters in All Trades & Report */
+    .filterbar .row{display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end}
+    .tag-select{ min-width:220px; max-width:380px; }
+    .tag-select select[multiple]{ min-height:108px; width:100%; }
+
+    /* Sticky table head for tall lists */
+    .tall-table{ overflow:auto; max-height:60vh; }
+    .tall-table thead th{ position:sticky; top:0; background:var(--card); z-index:1 }
+
+    /* Checkbox */
+    input[type="checkbox"]{ width:18px; height:18px; }
+
+    /* Small utility */
+    .grow{flex:1}
+    .spacer{flex:1}
+    .right{margin-left:auto}
+    .nowrap{white-space:nowrap}
+    .danger{color:var(--red)}
+    .ok{color:var(--green)}
+    .amber{color:var(--amber)}
+  
+    /* Compact tag UI */
+    .badge{
+      margin-left:6px; padding:2px 8px; border:1px solid var(--line);
+      background:var(--card-2); border-radius:999px; font-size:11px; color:var(--muted)
+    }
+    .tag-pop{position:fixed; inset:0; display:none; z-index:70}
+    .tag-pop.show{display:block}
+    .tag-pop .panel{
+      position:absolute; min-width:280px; max-width:420px; max-height:360px; overflow:auto;
+      background:var(--card); border:1px solid var(--line); border-radius:12px; padding:10px; box-shadow:var(--shadow)
+    }
+    .tag-pop .row{display:flex; gap:8px; align-items:center; margin-bottom:8px}
+    .tag-pop input[type="search"]{width:100%}
+    .tag-item{display:flex; gap:8px; align-items:center; padding:6px; border-radius:8px}
+    .tag-item:hover{background:rgba(255,255,255,.04)}
+
+    /* “screen-reader only” utility to hide mirrors while keeping them in the DOM */
+    .sr{position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0}
+  
+    /* Report filter row is a flex row */
+    #reportFilterBar .row{
+    display:flex;
+    gap:12px;
+    align-items:flex-end;
+    flex-wrap:wrap; /* wrap on small screens */
+    }
+
+    /* Right-align the action buttons */
+    #reportFilterBar .filter-actions{
+      margin-left:auto;
+      display:flex;
+      gap:8px;
+      align-items:flex-end;
+    }
+
+  </style>
+</head>
+<body>
+  <!-- ========== TOP BAR ========== -->
+  <header class="appbar" role="banner">
+    <div class="appbar-inner">
+      <div class="brand">
+        <span>📊 Trading Tracker</span>
+        <small id="fileBadge">Unsaved</small>
+      </div>
+
+      <!-- Tabs -->
+      <div class="seg" role="tablist" aria-label="Views">
+        <button class="active" id="tabBtn-backtest" role="tab" aria-selected="true" data-tab="backtest">Backtest</button>
+        <button id="tabBtn-alltrades" role="tab" aria-selected="false" data-tab="alltrades">All Trades</button>
+        <button id="tabBtn-report" role="tab" aria-selected="false" data-tab="report">Report</button>
+        <button id="tabBtn-analytics" role="tab" aria-selected="false" data-tab="analytics">Deep Analytics</button>
+      </div>
+
+      <!-- Unit + File actions -->
+      <div class="toolbar" style="margin-left:auto">
+        <div class="seg" aria-label="Units">
+          <button id="unitR" class="active">Unit: R</button>
+          <button id="unitDollarFlat">Unit: $ (flat)</button>
+          <button id="unitDollarComp">Unit: $ (comp)</button>
+        </div>
+
+        <button class="btn soft" id="openTagMgrBtn" title="Manage tags">Tags</button>
+
+        <button class="btn blue" id="saveBtn" title="Save JSON (S)">Save <span class="kbd">S</span></button>
+        <input class="sr" type="file" id="loadInput" accept=".json" />
+        <button class="btn soft" id="loadBtn">Load</button>
+        <button class="btn soft" id="exportBtn">Export CSV</button>
+      </div>
+    </div>
+
+    <!-- Unit configuration panel (appears when $ modes selected) -->
+    <div id="unitConfig" class="unit-config" aria-live="polite"></div>
+  </header>
+
+  <!-- ===== Tag Manager Modal (hidden by default) ===== -->
+  <div id="tagModalBackdrop" class="modal-backdrop" aria-hidden="true"></div>
+  <div id="tagModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="tagMgrTitle" aria-describedby="tagMgrDesc">
+    <h4 id="tagMgrTitle">Tag Manager</h4>
+    <p id="tagMgrDesc" class="muted" style="margin:4px 0 10px">Create, rename, and delete tags. Changes apply everywhere.</p>
+
+    <div class="row">
+      <label for="newTagInput">New tag</label>
+      <input id="newTagInput" type="text" placeholder="e.g., A+ Setup" />
+      <button class="btn" id="addTagBtn">Add</button>
+    </div>
+
+    <div class="row">
+      <label for="renameFrom">Rename</label>
+      <input id="renameFrom" type="text" placeholder="Old name" />
+      <span>→</span>
+      <input id="renameTo" type="text" placeholder="New name" />
+      <button class="btn soft" id="renameTagBtn">Rename</button>
+    </div>
+
+    <div class="row">
+      <label for="deleteTagInput">Delete tag</label>
+      <input id="deleteTagInput" type="text" placeholder="Tag to delete" />
+      <button class="btn red" id="deleteTagBtn">Delete</button>
+      <span class="muted">This removes the tag from all trades but keeps the trades.</span>
+    </div>
+
+    <div class="row">
+      <div class="grow">
+        <div class="muted" style="margin-bottom:6px">Existing tags</div>
+        <div id="tagList" class="list" role="listbox" aria-label="Existing tags">
+          <!-- populated by JS -->
+        </div>
+      </div>
+      <div class="right">
+        <button class="btn soft" id="closeTagMgrBtn">Close</button>
+      </div>
+    </div>
+  </div>
+  <!-- (Main content starts in Chunk 3/8) -->
+  <!-- ========== MAIN ========== -->
+  <main class="shell">
+
+    <!-- QUICK ENTRY DOCK (Backtest only) -->
+    <section class="quick-dock" id="quickDock" aria-label="Quick Entry">
+      <!-- Date -->
+      <div>
+        <div class="dock-group" aria-label="Date control">
+          <button class="icon-btn" id="prevDay" title="Previous day (←)">⟨</button>
+          <input type="date" id="dateInput" aria-label="Selected date" style="flex:1" />
+          <button class="icon-btn" id="nextDay" title="Next day (→)">⟩</button>
+          <button class="btn soft" id="todayBtn" title="Jump to today">Today</button>
+        </div>
+        <div class="hint">Use ← / → to move days</div>
+      </div>
+
+      <!-- Setup + Quick Tags -->
+      <div>
+        <div class="dock-group" aria-label="Setup">
+          <span class="muted" style="padding-left:6px">Setup</span>
+          <div class="seg" style="margin-left:6px">
+            <button class="active" data-setup="Breakout">Breakout</button>
+            <button data-setup="Reversal">Reversal</button>
+            <button data-setup="Engulfing">Engulfing</button>
+          </div>
+        </div>
+        <!-- Quick Tags (optional, applied to NEW trades you record) -->
+        <div class="chip-input" id="quickTagsBox" aria-label="Quick tags for new trades" style="margin-top:8px">
+          <!-- chips injected here -->
+          <input id="quickTagInput" type="text" aria-label="Add quick tag"
+                 placeholder="Quick tag… press Enter to add" />
+        </div>
+        <div class="hint">Quick Tags apply to the next trades you record (Win/Lose). Remove chips to stop applying.</div>
+      </div>
+
+      <!-- Win -->
+      <div>
+        <button class="btn big green" id="winBtn" title="Record Win (↑)">Win <span class="kbd">↑</span></button>
+        <div class="hint">Adds +2R to today</div>
+      </div>
+
+      <!-- Lose -->
+      <div>
+        <button class="btn big red" id="loseBtn" title="Record Lose (↓)">Lose <span class="kbd">↓</span></button>
+        <div class="hint">Adds -1R to today</div>
+      </div>
+    </section>
+
+    <!-- BACKTEST -->
+    <section id="tab-backtest" class="tabcontent active stack" role="tabpanel" aria-labelledby="tabBtn-backtest">
+      <div class="grid cols-2" style="margin-top:12px">
+        <!-- Left: Day stats -->
+        <div class="grid">
+          <div class="card">
+            <h3>Day Stats (<span id="dayLabel">—</span>)</h3>
+            <div class="grid cols-3" style="margin-top:10px">
+              <div class="kpi"><div class="label">Wins</div><div class="value" id="wins">0</div></div>
+              <div class="kpi"><div class="label">Losses</div><div class="value" id="losses">0</div></div>
+              <div class="kpi"><div class="label">Total</div><div class="value" id="total">0</div></div>
+              <div class="kpi"><div class="label">Win Rate</div><div class="value" id="winRate">0%</div></div>
+              <div class="kpi"><div class="label">Total R</div><div class="value" id="totalR">0.0R</div></div>
+              <div class="kpi"><div class="label">Expectancy</div><div class="value" id="expectancy">0.00R</div></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Quick Notes</h3>
+            <textarea id="dayNote" rows="5" placeholder="Optional: context for today's trades…" style="width:100%; resize:vertical"></textarea>
+            <div style="display:flex; gap:8px; margin-top:10px">
+              <button class="btn soft" id="resetDayBtn" title="Reset current day (R)">Reset Day <span class="kbd">R</span></button>
+              <button class="btn soft" id="resetAllBtn">Reset All</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Today table -->
+        <div class="card">
+          <h3>Today Entries</h3>
+          <div style="overflow:auto; max-height:480px; margin-top:8px">
+            <table id="todayTable" aria-label="Today table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Setup</th>
+                  <th>Wins</th>
+                  <th>Losses</th>
+                  <th>Total</th>
+                  <th>Win %</th>
+                  <th>Total R</th>
+                  <th>Expectancy</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="todayTableBody">
+                <tr><td colspan="9" class="muted" style="text-align:center">No data for this day yet</td></tr>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td><strong>TOTAL</strong></td>
+                  <td>—</td>
+                  <td id="sumWins">0</td>
+                  <td id="sumLosses">0</td>
+                  <td id="sumTotal">0</td>
+                  <td id="sumWinRate">0%</td>
+                  <td id="sumR">0.0R</td>
+                  <td id="sumExp">0.00R</td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Screenshot section -->
+      <div class="card shot-card" style="margin-top:16px">
+        <h3>Screenshot</h3>
+        <div id="shotDrop" class="shot-drop" tabindex="0" aria-label="Paste area">
+          <div>
+            <div><strong>Click here</strong> and press <b>Ctrl/Cmd + V</b> to paste a screenshot. No permissions needed.</div>
+            <div class="muted" style="margin-top:6px">Image is stored at full size and saved with your JSON.</div>
+          </div>
+        </div>
+        <img id="shotImg" class="shot-img" alt="Screenshot for this day" style="display:none" />
+        <div class="shot-tools" id="shotTools" style="display:none">
+          <button class="btn soft" id="openShot">Open in new tab</button>
+          <button class="btn soft" id="clearShot">Clear Screenshot</button>
+        </div>
+      </div>
+    </section>
+    <!-- (All Trades tab markup arrives in Chunk 4/8) -->
+    <!-- ALL TRADES -->
+    <section id="tab-alltrades" class="tabcontent stack" role="tabpanel" aria-labelledby="tabBtn-alltrades">
+      <!-- Filter bar -->
+      <div class="card filterbar" id="atFilterBar">
+        <div class="row">
+          <div>
+            <label for="atStartDate">From</label><br/>
+            <input type="date" id="atStartDate" />
+          </div>
+          <div>
+            <label for="atEndDate">To</label><br/>
+            <input type="date" id="atEndDate" />
+          </div>
+          <div>
+            <label for="atSetupSel">Setup</label><br/>
+            <select id="atSetupSel">
+              <option value="">Any</option>
+              <option>Breakout</option>
+              <option>Reversal</option>
+              <option>Engulfing</option>
+            </select>
+          </div>
+          <div>
+            <label for="atResultSel">Result</label><br/>
+            <select id="atResultSel">
+              <option value="">Any</option>
+              <option value="W">Win</option>
+              <option value="L">Loss</option>
+            </select>
+          </div>
+          <div>
+            <label for="atDayTypeSel">Day Type</label><br/>
+            <select id="atDayTypeSel" title="Based on full-day net R">
+              <option value="">Any</option>
+              <option value="Winning">Winning day</option>
+              <option value="Losing">Losing day</option>
+              <option value="Breakeven">Breakeven day</option>
+            </select>
+          </div>
+          <!-- TAGS (compact popover) — All Trades -->
+          <div class="tag-select">
+            <label>Tags</label><br/>
+            <button class="btn soft" id="allTradesTagsBtn">
+              Tags <span class="badge">Any</span>
+            </button>
+
+            <!-- Hidden mirrors so your existing Apply code can keep reading the same IDs -->
+            <select id="atTagsMulti" multiple class="sr"></select>
+            <label class="sr"><input type="checkbox" id="atTagsAll" /> Match all</label>
+          </div>
+
+          <div style="display:flex; gap:8px; align-items:flex-end">
+            <button class="btn" id="atApply">Apply</button>
+            <button class="btn soft" id="atClear">Clear</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bulk actions -->
+      <div class="bulkbar" id="atBulkBar" aria-label="Bulk actions">
+        <button class="btn soft" id="atSelectAll">Select all</button>
+        <button class="btn soft" id="atClearSel">Clear selection</button>
+        <div class="spacer"></div>
+        <input id="atBulkTagInput" type="text" placeholder="Tag to add/remove…" style="min-width:180px"/>
+        <button class="btn" id="atBulkAddTag">Add tag</button>
+        <button class="btn soft" id="atBulkRemoveTag">Remove tag</button>
+        <button class="btn red" id="atBulkDelete">Delete selected</button>
+        <button class="btn soft" id="atExport">Export All Trades CSV</button>
+      </div>
+
+      <!-- Two-pane layout -->
+      <div class="alltrades-layout">
+        <!-- Left: table -->
+        <div class="card">
+          <h3>All Trades</h3>
+          <div class="tall-table" style="margin-top:8px">
+            <table id="atTable" aria-label="All trades table">
+              <thead>
+                <tr>
+                  <th class="col-select sticky"><input type="checkbox" id="atHeadCheck" title="Select page"/></th>
+                  <th class="sticky">Date</th>
+                  <th class="sticky">Setup</th>
+                  <th class="sticky">Result</th>
+                  <th class="sticky">R</th>
+                  <th class="sticky">Day Type</th>
+                  <th class="sticky">Tags</th>
+                  <th class="sticky">Note</th>
+                  <th class="col-pic sticky">Pic</th>
+                </tr>
+              </thead>
+              <tbody id="atTbody">
+                <tr><td colspan="9" class="muted" style="text-align:center">No trades yet</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Right: hover preview pane (never occludes) -->
+        <aside class="preview-pane" aria-live="polite">
+          <div class="meta">
+            <div>Preview</div>
+            <div class="spacer"></div>
+            <button class="btn soft" id="atOpenShot">Open</button>
+            <button class="btn soft" id="atClearShot">Clear</button>
+          </div>
+          <div class="preview-holder" id="atPreviewHolder">
+            <span class="muted">Hover a pic icon to preview the day’s screenshot here</span>
+            <!-- <img id="atPrevImg" /> injected by JS -->
+          </div>
+          <div id="atPrevMeta" class="muted" style="margin-top:8px"></div>
+        </aside>
+      </div>
+    </section>
+    <!-- REPORT -->
+    <section id="tab-report" class="tabcontent stack" role="tabpanel" aria-labelledby="tabBtn-report">
+      <!-- ===== Report Filter Bar START ===== -->
+      <div class="card filterbar" id="reportFilterBar">
+        <div class="row">
+          <div>
+            <label for="startDate">From</label><br/>
+            <input type="date" id="startDate" />
+          </div>
+
+          <div>
+            <label for="endDate">To</label><br/>
+            <input type="date" id="endDate" />
+          </div>
+
+          <div>
+            <label for="repSetupSel">Setup</label><br/>
+            <select id="repSetupSel">
+              <option value="">Any</option>
+              <option>Breakout</option>
+              <option>Reversal</option>
+              <option>Engulfing</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="repResultSel">Result</label><br/>
+            <select id="repResultSel">
+              <option value="">Any</option>
+              <option value="W">Win</option>
+              <option value="L">Loss</option>
+            </select>
+          </div>
+
+          <!-- TAGS (compact popover) -->
+          <div class="tag-select">
+            <label>Tags</label><br/>
+            <button class="btn soft" id="reportTagsBtn">
+              Tags <span class="badge">Any</span>
+            </button>
+
+            <!-- ONE set of hidden mirrors so existing code still reads the same IDs -->
+            <select id="repTagsMulti" multiple class="sr"></select>
+            <label class="sr"><input type="checkbox" id="repTagsAll" /> Match all</label>
+          </div>
+
+          <!-- Buttons stay inside the same .row; margin-left:auto pushes them right -->
+          <div class="filter-actions" style="margin-left:auto; display:flex; gap:8px; align-items:flex-end">
+            <button class="btn" id="applyRange">Apply</button>
+            <button class="btn soft" id="clearRangeBtn">Clear</button>
+          </div>
+        </div>
+      </div>
+      <!-- ===== Report Filter Bar END ===== -->
+
+      <div class="card">
+        <h3>Summary</h3>
+        <div class="kpis" style="margin-top:10px">
+          <div class="kpi"><div class="label">Total Trades</div><div class="value" id="kpiTrades">0</div></div>
+          <div class="kpi"><div class="label">Net Profit</div><div class="value" id="kpiNet">0R</div></div>
+          <div class="kpi"><div class="label">Win Rate</div><div class="value" id="kpiWR">0%</div></div>
+          <div class="kpi"><div class="label">Expectancy</div><div class="value" id="kpiExp">0R</div></div>
+          <div class="kpi"><div class="label">Max Drawdown</div><div class="value" id="kpiDD">0R</div></div>
+          <div class="kpi"><div class="label">Total Day Span</div><div class="value" id="kpiDaySpan">0</div></div>
+          <div class="kpi"><div class="label">Total Month Span</div><div class="value" id="kpiMonthSpan">0</div></div>
+          <div class="kpi"><div class="label">Total Quarter Span</div><div class="value" id="kpiQuarterSpan">0</div></div>
+          <div class="kpi"><div class="label">Total Year Span</div><div class="value" id="kpiYearSpan">0</div></div>
+          <div class="kpi"><div class="label">Avg Trades / Day</div><div class="value" id="kpiAvgPerDay">0.00</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="chart-head" style="display:flex; align-items:center; gap:10px">
+          <h3 style="margin:0" id="equityTitle">Cumulative Equity</h3>
+          <div class="spacer"></div>
+          <div class="seg" id="granSeg" aria-label="Granularity">
+            <button class="active" data-gran="daily">Daily</button>
+            <button data-gran="weekly">Weekly</button>
+            <button data-gran="monthly">Monthly</button>
+          </div>
+        </div>
+        <div style="height:360px"><canvas id="equityChart" aria-label="Equity chart"></canvas></div>
+        <div class="grid cols-4" style="margin-top:12px">
+          <div class="kpi"><div class="label">Starting Equity</div><div class="value" id="startEquity">0R</div></div>
+          <div class="kpi"><div class="label">Current Equity</div><div class="value" id="currEquity">0R</div></div>
+          <div class="kpi"><div class="label">Peak Equity</div><div class="value" id="peakEquity">0R</div></div>
+          <div class="kpi"><div class="label">Max Drawdown</div><div class="value" id="chartDD">0R</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Setup Performance</h3>
+        <div id="setupCards" class="grid cols-3" style="margin-top:10px"></div>
+      </div>
+
+      <div class="grid cols-2">
+        <div class="card">
+          <h3>Daily Outcomes</h3>
+          <div class="grid cols-3" style="margin-top:8px">
+            <div class="kpi"><div class="label">Winning Days</div><div class="value" id="winDays">0 (0%)</div></div>
+            <div class="kpi"><div class="label">Losing Days</div><div class="value" id="loseDays">0 (0%)</div></div>
+            <div class="kpi"><div class="label">Breakeven Days</div><div class="value" id="beDays">0 (0%)</div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Periodic Average</h3>
+          <div class="grid cols-3" style="margin-top:8px">
+            <div class="kpi"><div class="label">Daily Avg</div><div class="value" id="avgDaily">0R</div></div>
+            <div class="kpi"><div class="label">Weekly Avg</div><div class="value" id="avgWeekly">0R</div></div>
+            <div class="kpi"><div class="label">Monthly Avg</div><div class="value" id="avgMonthly">0R</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid cols-2">
+        <div class="card">
+          <h3>Losing Streak Frequency (≥2) — by Trades</h3>
+          <div style="overflow:auto; max-height:260px; margin-top:8px">
+            <table id="streakTable">
+              <thead><tr><th>Consecutive Losing Trades</th><th>Count</th></tr></thead>
+              <tbody id="streakBody"><tr><td colspan="2" class="muted" style="text-align:center">No data</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Monthly Performance</h3>
+          <div style="overflow:auto; max-height:260px; margin-top:8px">
+            <table id="monthlyTable">
+              <thead>
+                <tr><th>Month</th><th>Trades</th><th>Net</th><th>Win %</th><th>Exp</th><th>Max DD</th></tr>
+              </thead>
+              <tbody id="monthlyBody"><tr><td colspan="6" class="muted" style="text-align:center">No data</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- ANALYTICS -->
+    <section id="tab-analytics" class="tabcontent stack" role="tabpanel" aria-labelledby="tabBtn-analytics">
+      <!-- Run settings on top -->
+      <div class="card">
+        <h3>Run Settings</h3>
+        <div class="grid cols-3" style="margin-top:8px">
+          <div>
+            <label>Use Report Filter</label><br/>
+            <input type="checkbox" id="anaUseFilter" checked />
+          </div>
+          <div>
+            <label>Trades Horizon</label>
+            <input type="number" id="anaHorizon" min="1" step="1" value="100" style="width:100%">
+          </div>
+          <div>
+            <label>Simulations</label>
+            <input type="number" id="anaSims" min="100" step="100" value="10000" style="width:100%">
+          </div>
+        </div>
+
+        <div class="grid cols-3" style="margin-top:8px">
+          <div>
+            <label>Block Size (streaks)</label>
+            <input type="number" id="anaBlock" min="1" step="1" value="1" style="width:100%">
+          </div>
+          <div>
+            <label>Bootstrap Resamples</label>
+            <input type="number" id="anaBoot" min="100" step="100" value="10000" style="width:100%">
+          </div>
+          <div>
+            <label>Seed (optional)</label>
+            <input type="number" id="anaSeed" step="1" style="width:100%">
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:8px; margin-top:12px">
+          <button class="btn blue" id="anaRun">Run Analytics</button>
+          <button class="btn soft" id="anaClear">Clear Results</button>
+          <span class="muted" id="anaStatus"></span>
+        </div>
+
+        <div class="progress" style="margin-top:10px"><div id="anaProg"></div></div>
+        <div class="card" style="margin-top:12px; background:#1a1f42">
+          <div class="code" id="anaMeta">—</div>
+        </div>
+      </div>
+
+      <!-- Confidence full width -->
+      <div class="card">
+        <h3>Confidence</h3>
+        <div class="grid cols-2">
+          <div>
+            <div class="kpi"><div class="label">Expectancy (R/trade) — 95% Bootstrap CI</div><div class="value" id="ciExp">—</div></div>
+            <div style="height:220px; margin-top:8px"><canvas id="bootChart"></canvas></div>
+          </div>
+          <div>
+            <div class="kpi"><div class="label">Win Rate — 95% Wilson CI</div><div class="value" id="ciWR">—</div></div>
+            <div class="muted" style="margin-top:6px">Wilson interval assumes IID; streakiness is modeled in Monte Carlo via block sampling.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Monte Carlo full width -->
+      <div class="card">
+        <h3>Monte Carlo Projections (in R)</h3>
+        <div class="grid cols-2">
+          <div style="height:260px"><canvas id="mcFan"></canvas></div>
+          <div style="height:260px"><canvas id="mcFinalHist"></canvas></div>
+        </div>
+        <div class="grid cols-2" style="margin-top:8px">
+          <div style="height:220px"><canvas id="mcDDHist"></canvas></div>
+          <div class="grid">
+            <div class="kpi"><div class="label">Mean Final Outcome</div><div class="value" id="mcMean">—</div></div>
+            <div class="kpi"><div class="label">90% Range</div><div class="value" id="mcRange">—</div></div>
+            <div class="kpi"><div class="label">Median Final Outcome</div><div class="value" id="mcMedian">—</div></div>
+            <div class="kpi"><div class="label">Avg Max Drawdown</div><div class="value" id="mcAvgDD">—</div></div>
+            <div class="kpi"><div class="label">DD 5–95%</div><div class="value" id="mcDDRange">—</div></div>
+            <div class="kpi"><div class="label">Prob. Finish Negative</div><div class="value" id="mcNegProb">—</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  <!-- ========== CORE SCRIPT (Part 1) ==========
+       Models, storage, migration, filters, aggregates -->
+  <script>
+  // ====== Constants & State ======
+  const SETUPS = ["Breakout","Reversal","Engulfing"];
+  const STORAGE_KEY = 'tt_desktop_v52';
+  let currentDate = new Date().toISOString().slice(0,10);
+  let currentSetup = SETUPS[0];
+
+  // Canonical store:
+  // dailyData[date] = { note, screenshot?, _events:[{id,setup,outcome:'W'|'L',tags:[],t?,note?}], per-setup counts derived }
+  let dailyData = {};
+  let tagCatalog = [];
+  let quickTags = []; // tags to apply to NEW trades
+  let currentFileName = null;
+
+  // UI / report state
+  let equityChart = null, granularity = 'daily';
+  let unitMode = 'R', rValue = 1, compStart = 100000, compRiskPct = 0.3;
+  let reportStartDate = null, reportEndDate = null;
+  let repSetup = '', repResult = '', repTags = [], repTagsAll = false;
+  // All Trades filter state
+  let atStartDate = null, atEndDate = null, atSetup = '', atResult = '', atDayType = '', atTags = [], atTagsAll = false;
+
+  const undoStack = [];
+
+  // Analytics
+  let anaWorker = null, anaCacheKey = null;
+  let anaBootChart = null, mcFanChart = null, mcFinalHistChart = null, mcDDHistChart = null;
+
+  // ====== Utilities ======
+  const $ = (s)=>document.querySelector(s);
+  const $$ = (s)=>document.querySelectorAll(s);
+  const fmt = (n,d=2)=>Number(n).toFixed(d);
+  const clamp = (x,a,b)=>Math.max(a, Math.min(b, x));
+  function dispDate(s){ if(!s) return '—'; if(s.includes('T')) s=s.slice(0,10); const p=s.split('-'); return p.length===3? `${p[0]}/${p[1]}/${p[2]}` : s.replaceAll('-','/'); }
+  function pushUndo(fn){ undoStack.push(fn); if(undoStack.length>20) undoStack.shift(); }
+  function showToast(msg, undoFn){
+    const box = $('#toast'); if(!box) return;
+    const t = document.createElement('div'); t.className='t'; t.textContent=msg;
+    if(undoFn){ const u=document.createElement('span'); u.className='undo'; u.textContent='Undo'; u.onclick=()=>{ try{undoFn();} finally{box.removeChild(t);} }; t.appendChild(u); }
+    box.appendChild(t); setTimeout(()=>{ if(t.isConnected) box.removeChild(t); }, 2800);
+  }
+
+  // ====== Safe day access (non-mutating) ======
+  function getDay(date){ return dailyData[date] || null; }
+  function touchDay(date){
+    if(!dailyData[date]) dailyData[date] = { note:'', _events:[] };
+    if(!('_events' in dailyData[date])) dailyData[date]._events = [];
+    if(dailyData[date].note===undefined) dailyData[date].note='';
+    return dailyData[date];
+  }
+
+  // ====== Tag helpers ======
+  function ensureTag(name){
+    const t = (name||'').trim(); if(!t) return null;
+    if(!tagCatalog.includes(t)) tagCatalog.push(t);
+    return t;
+  }
+  function addTagsToEvent(ev, tags){
+    if(!ev.tags) ev.tags=[];
+    tags.forEach(tag=>{
+      const t = ensureTag(tag);
+      if(t && !ev.tags.includes(t)) ev.tags.push(t);
+    });
+  }
+  function removeTagsFromEvent(ev, tags){
+    if(!ev.tags) return;
+    ev.tags = ev.tags.filter(x=> !tags.includes(x));
+  }
+
+  // ====== Derived aggregates ======
+  function deriveAggregatesForDay(day){
+    // wipe known per-setup keys first
+    for(const k of Object.keys(day)){
+      if(['note','_events','screenshot'].includes(k)) continue;
+      if(SETUPS.includes(k)) delete day[k];
+    }
+    const acc = {};
+    for(const ev of (day._events||[])){
+      if(!acc[ev.setup]) acc[ev.setup] = {wins:0, losses:0};
+      if(ev.outcome==='W') acc[ev.setup].wins++;
+      else acc[ev.setup].losses++;
+    }
+    for(const s of Object.keys(acc)) day[s]=acc[s];
+  }
+
+  function computeDayType(day){
+    let r=0;
+    for(const ev of (day._events||[])) r += (ev.outcome==='W'? 2 : -1);
+    return r>0? 'Winning' : r<0? 'Losing' : 'Breakeven';
+  }
+
+  // ====== Migration (from older files with counts only) ======
+  function migrateIfNeeded(){
+    let changed=false;
+    for(const d of Object.keys(dailyData)){
+      const day = dailyData[d];
+      if(!day._events) { day._events=[]; changed=true; }
+      // Expand legacy per-setup counts into _events if _events empty but counts exist
+      if(day._events.length===0){
+        for(const [k,v] of Object.entries(day)){
+          if(['note','_events','screenshot'].includes(k)) continue;
+          if(SETUPS.includes(k) && (v.wins||v.losses)){
+            const w = Number(v.wins||0), l = Number(v.losses||0);
+            for(let i=0;i<w;i++) day._events.push({id:`${d}-${k}-W-${i+1}`, setup:k, outcome:'W', tags:[]});
+            for(let i=0;i<l;i++) day._events.push({id:`${d}-${k}-L-${i+1}`, setup:k, outcome:'L', tags:[]});
+            changed=true;
+          }
+        }
+      }
+      deriveAggregatesForDay(day);
+      if(day.note===undefined) day.note='';
+    }
+    return changed;
+  }
+
+  // ====== Storage (autosave excludes screenshots; no empty days) ======
+  function stripForLocal(){
+    const data = {};
+    for(const d of Object.keys(dailyData)){
+      const day = dailyData[d];
+      if(!day) continue;
+      const hasStuff = (day.note && day.note.trim()!=='') || (day._events && day._events.length>0) || day.screenshot;
+      if(!hasStuff) continue; // no empty-day pollution
+      data[d] = { note: day.note||'', _events: day._events?.map(ev=> ({...ev})) || [] };
+      // keep derived per-setup counts so UI can paint quickly
+      for(const s of SETUPS){
+        if(day[s]) data[d][s] = {wins: day[s].wins||0, losses: day[s].losses||0};
+      }
+      // DO NOT store screenshot in local autosave
+    }
+    return data;
+  }
+  function saveLocal(){
+    try{
+      const payload = {
+        version: '5.2',
+        currentDate, currentSetup, unitMode, rValue, compStart, compRiskPct,
+        reportStartDate, reportEndDate,
+        repSetup, repResult, repTags, repTagsAll,
+        atStartDate, atEndDate, atSetup, atResult, atDayType, atTags, atTagsAll,
+        tagCatalog,
+        dailyData: stripForLocal(),
+        currentFileName
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    }catch(e){ console.warn('Local save failed (likely quota):', e); }
+    $('#fileBadge').textContent = currentFileName ? `File: ${currentFileName}` : 'Unsaved';
+  }
+  function loadLocal(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return;
+      const data = JSON.parse(raw);
+      currentDate = data.currentDate || currentDate;
+      currentSetup = data.currentSetup || currentSetup;
+      unitMode = data.unitMode || 'R';
+      rValue = data.rValue ?? 1;
+      compStart = data.compStart ?? 100000;
+      compRiskPct = data.compRiskPct ?? 0.3;
+      reportStartDate = data.reportStartDate || null;
+      reportEndDate = data.reportEndDate || null;
+
+      repSetup = data.repSetup || ''; repResult = data.repResult || '';
+      repTags = data.repTags || []; repTagsAll = !!data.repTagsAll;
+
+      atStartDate = data.atStartDate || null; atEndDate = data.atEndDate || null;
+      atSetup = data.atSetup || ''; atResult = data.atResult || '';
+      atDayType = data.atDayType || ''; atTags = data.atTags || []; atTagsAll = !!data.atTagsAll;
+
+      tagCatalog = Array.isArray(data.tagCatalog) ? data.tagCatalog : [];
+      dailyData = data.dailyData || {};
+      currentFileName = data.currentFileName || null;
+
+      migrateIfNeeded();
+    }catch(e){ console.warn('Autosave load failed', e); }
+  }
+
+  // ====== Filters & clones ======
+  function weekKey(dateStr){
+    const date = new Date(dateStr);
+    const day = (date.getUTCDay()||7);
+    date.setUTCDate(date.getUTCDate() + 4 - day);
+    const yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
+    return Math.ceil((((date - yearStart)/86400000)+1)/7);
+  }
+  function groupSeries(series, gran, valueKey='value'){
+    if(gran==='daily'){
+      return {labels: series.map(d=>dispDate(d.date)), values: series.map(d=>d[valueKey])};
+    }
+    const map={};
+    series.forEach(pt=>{
+      const key = gran==='weekly' ? `${new Date(pt.date).getFullYear()}-W${String(weekKey(pt.date)).padStart(2,'0')}` : pt.date.slice(0,7);
+      map[key] = pt[valueKey];
+    });
+    const labels = Object.keys(map).map(k=> k.includes('-W') ? k : k.replace('-','/'));
+    return {labels, values:Object.values(map)};
+  }
+
+  function dayMatchesType(date){
+    const day = dailyData[date];
+    if(!day) return 'Breakeven';
+    return computeDayType(day);
+  }
+
+  function eventMatches(ev, f){
+    if(f.setup && ev.setup!==f.setup) return false;
+    if(f.result && ev.outcome!==f.result) return false;
+    if(f.tags && f.tags.length>0){
+      const evTags = ev.tags||[];
+      if(f.tagsAll){
+        // need all
+        for(const t of f.tags){ if(!evTags.includes(t)) return false; }
+      }else{
+        // need any
+        let ok=false; for(const t of f.tags){ if(evTags.includes(t)) { ok=true; break; } }
+        if(!ok) return false;
+      }
+    }
+    return true;
+  }
+
+  function filteredClone(source, f){
+    // f: {start,end, setup, result, dayType, tags[], tagsAll}
+    const out = {};
+    const dates = Object.keys(source).sort();
+    for(const d of dates){
+      if(f.start && d < f.start) continue;
+      if(f.end && d > f.end) continue;
+
+      if(f.dayType){
+        const dt = dayMatchesType(d);
+        if(dt !== f.dayType) continue;
+      }
+
+      const day = source[d];
+      const keep = [];
+      for(const ev of (day._events||[])){
+        if(eventMatches(ev, f)) keep.push({...ev});
+      }
+      if(keep.length===0){
+        // allow day if we filtered by day/notes only? For analytics we want only days with trades.
+        continue;
+      }
+      out[d] = { note: day.note||'', _events: keep };
+      if(day.screenshot) out[d].screenshot = day.screenshot; // clone ref; fine
+      deriveAggregatesForDay(out[d]);
+    }
+    return out;
+  }
+
+  // ====== Flatten trades ======
+  function flattenTrades(data, withDayTypeFromFull = true){
+    const rows = [];
+    const dates = Object.keys(data).sort();
+    for(const d of dates){
+      const day = data[d];
+      const dayType = withDayTypeFromFull ? dayMatchesType(d) : computeDayType(day);
+      (day._events||[]).forEach((ev, idx)=>{
+        rows.push({
+          id: ev.id || `${d}-${idx}`,
+          date: d,
+          setup: ev.setup,
+          outcome: ev.outcome,
+          r: ev.outcome==='W' ? 2 : -1,
+          tags: Array.isArray(ev.tags)? ev.tags.slice(): [],
+          note: ev.note || '',
+          idx,
+          dayType
+        });
+      });
+    }
+    return rows;
+  }
+
+  // ====== Aggregates (R & compounding) ======
+  function aggregateR(dataObj){
+    const dates = Object.keys(dataObj).sort();
+    let totalWins=0,totalLoss=0, cum=0, peak=0, maxDD=0;
+    const dailySeries = [];
+    dates.forEach(date=>{
+      let dayR=0;
+      const day = dataObj[date];
+      (day._events||[]).forEach(ev=> { dayR += (ev.outcome==='W'? 2 : -1); if(ev.outcome==='W') totalWins++; else totalLoss++; });
+      cum += dayR;
+      peak = Math.max(peak, cum);
+      maxDD = Math.max(maxDD, peak - cum);
+      dailySeries.push({date, value:cum});
+    });
+    const trades = totalWins + totalLoss;
+    const netR = (totalWins*2) - totalLoss;
+    const exp = trades>0 ? netR/trades : 0;
+    return {dates, totalWins, totalLoss, trades, netR, exp, maxDD, dailySeries};
+  }
+
+  function aggregateCompounding(dataObj, startUSD, riskPct){
+    const a = riskPct/100;
+    const dates = Object.keys(dataObj).sort();
+    const series = [];
+    let P = startUSD;
+    let peak = P, maxDD = 0;
+    let totalWins=0, totalLoss=0, totalTrades=0;
+    let totalPnL = 0;
+
+    dates.forEach(date=>{
+      let wins=0, losses=0;
+      (dataObj[date]._events||[]).forEach(ev=> { if(ev.outcome==='W') wins++; else losses++; });
+      const factor = Math.pow(1+2*a, wins) * Math.pow(1-a, losses);
+      const prevP = P;
+      P = P * factor;
+      totalPnL += (P - prevP);
+      totalWins += wins; totalLoss += losses;
+      totalTrades += wins + losses;
+      peak = Math.max(peak, P);
+      maxDD = Math.max(maxDD, peak - P);
+      series.push({date, value:P, delta:(P-prevP), wins, losses});
+    });
+
+    const netUSD = P - startUSD;
+    const expUSDperTrade = totalTrades>0 ? totalPnL/totalTrades : 0;
+    return {series, current:P, start:startUSD, netUSD, maxDD, totalTrades, totalWins, totalLoss, expUSDperTrade};
+  }
+
+  // ====== UI HUD & unit config ======
+  function renderUnitConfig(){
+    const box = $('#unitConfig');
+    box.classList.remove('show');
+    box.innerHTML = '';
+    if(unitMode==='flat'){
+      box.classList.add('show');
+      box.innerHTML = `
+        <div class="row">
+          <label>Flat mode:</label>
+          <label for="rValue">1R = $</label>
+          <input type="number" id="rValue" step="0.01" min="0" style="width:140px">
+          <span class="note">Applies to Report & CSV.</span>
+        </div>`;
+      const el = $('#rValue'); el.value = rValue>0? rValue : '';
+      el.onchange = ()=>{ const v=parseFloat(el.value); if(isFinite(v) && v>0){ rValue=v; if(unitMode==='flat') updateReportView(); saveLocal(); } };
+    } else if(unitMode==='comp'){
+      box.classList.add('show');
+      box.innerHTML = `
+        <div class="row">
+          <label>Compounding:</label>
+          <label for="compStart">Start $</label>
+          <input type="number" id="compStart" step="100" min="0" style="width:160px">
+          <label for="compRisk">% Risk per trade</label>
+          <input type="number" id="compRisk" step="0.01" min="0" max="100" style="width:140px">
+          <span class="note">Exact compounding using wins/losses per day.</span>
+        </div>`;
+      const s = $('#compStart'), r = $('#compRisk');
+      s.value = compStart || ''; r.value = compRiskPct || '';
+      s.onchange = ()=>{ const v=parseFloat(s.value); if(isFinite(v) && v>0){ compStart=v; if(unitMode==='comp') updateReportView(); saveLocal(); } };
+      r.onchange = ()=>{ const v=parseFloat(r.value); if(isFinite(v) && v>=0 && v<=100){ compRiskPct=v; if(unitMode==='comp') updateReportView(); saveLocal(); } };
+    }
+  }
+
+  function updateHUD(){
+    $('#fileBadge').textContent = currentFileName ? `File: ${currentFileName}` : 'Unsaved';
+    $('#dateInput').value = currentDate;
+    $('#unitR').classList.toggle('active', unitMode==='R');
+    $('#unitDollarFlat').classList.toggle('active', unitMode==='flat');
+    $('#unitDollarComp').classList.toggle('active', unitMode==='comp');
+    $('#equityTitle').textContent = unitMode==='comp' ? 'Portfolio Value (Compounding)' :
+                                    unitMode==='flat' ? 'Cumulative Equity ($)' : 'Cumulative Equity (R)';
+    renderUnitConfig();
+  }
+
+  // ====== Backtest View ======
+  function updateBacktestView(){
+    updateHUD();
+    const day = getDay(currentDate);
+    $('#dayLabel').textContent = dispDate(currentDate);
+
+    // Note field — create day only on first edit
+    $('#dayNote').value = day?.note || '';
+    $('#dayNote').oninput = ()=>{
+      const v = $('#dayNote').value.slice(0, 1000);
+      const target = touchDay(currentDate);
+      target.note = v;
+      saveLocal();
+    };
+
+    // Aggregates for today
+    let W=0,L=0;
+    if(day){
+      for(const [k,v] of Object.entries(day)){
+        if(['note','_events','screenshot'].includes(k)) continue;
+        W += v.wins||0; L += v.losses||0;
+      }
+    }
+    const T = W+L, dayR = (W*2)-L, WR = T? (W/T*100):0, EXP = T? dayR/T : 0;
+    $('#wins').textContent = W;
+    $('#losses').textContent = L;
+    $('#total').textContent = T;
+    $('#winRate').textContent = `${fmt(WR,1)}%`;
+    $('#totalR').textContent = `${fmt(dayR,1)}R`;
+    $('#expectancy').textContent = `${fmt(EXP,2)}R`;
+
+    // Today table
+    const body = $('#todayTableBody'); body.innerHTML='';
+    let sumW=0, sumL=0;
+    const setupsOnly = day ? Object.keys(day).filter(k=>!['note','_events','screenshot'].includes(k)) : [];
+    if(setupsOnly.length===0){
+      body.innerHTML = `<tr><td colspan="9" class="muted" style="text-align:center">No data for this day yet</td></tr>`;
+    }else{
+      for(const setup of setupsOnly){
+        const v = day[setup]; const w=v.wins||0, l=v.losses||0, t=w+l;
+        const r=(w*2)-l, wr=t? (w/t*100):0, exp=t? r/t:0;
+        sumW+=w; sumL+=l;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${dispDate(currentDate)}</td>
+          <td>${setup}</td>
+          <td>${w}</td>
+          <td>${l}</td>
+          <td>${t}</td>
+          <td>${fmt(wr,1)}%</td>
+          <td>${fmt(r,1)}R</td>
+          <td>${fmt(exp,2)}R</td>
+          <td><button class="icon-btn" title="Delete" data-del="${setup}">🗑️</button></td>`;
+        body.appendChild(tr);
+      }
+    }
+    const allT = sumW+sumL, allR=(sumW*2)-sumL, allWR= allT? (sumW/allT*100):0, allExp = allT? allR/allT:0;
+    $('#sumWins').textContent = sumW;
+    $('#sumLosses').textContent = sumL;
+    $('#sumTotal').textContent = allT;
+    $('#sumWinRate').textContent = `${fmt(allWR,1)}%`;
+    $('#sumR').textContent = `${fmt(allR,1)}R`;
+    $('#sumExp').textContent = `${fmt(allExp,2)}R`;
+
+    body.querySelectorAll('[data-del]').forEach(btn=>{
+      btn.onclick = ()=>{
+        const setup = btn.getAttribute('data-del');
+        const snapshot = JSON.parse(JSON.stringify(dailyData));
+        pushUndo(()=>{ dailyData = snapshot; updateBacktestView(); updateReportView(); saveLocal(); });
+        const tgt = touchDay(currentDate);
+        // remove all events of that setup
+        tgt._events = (tgt._events||[]).filter(ev=> ev.setup !== setup);
+        deriveAggregatesForDay(tgt);
+        if((tgt._events?.length||0)===0 && (!tgt.note || tgt.note.trim()==='') && !tgt.screenshot){
+          delete dailyData[currentDate];
+        }
+        showToast(`Deleted ${setup} for ${dispDate(currentDate)}`);
+        updateBacktestView(); updateReportView(); saveLocal();
+      };
+    });
+
+    updateScreenshotView();
+  }
+
+  function updateScreenshotView(){
+    const day = getDay(currentDate);
+    const dataUrl = day?.screenshot || null;
+    const img = $('#shotImg'), tools = $('#shotTools'), drop = $('#shotDrop');
+    if(dataUrl){
+      img.src = dataUrl; img.style.display='block'; tools.style.display='flex'; drop.style.display='none';
+    }else{
+      img.removeAttribute('src'); img.style.display='none'; tools.style.display='none'; drop.style.display='flex';
+    }
+  }
+
+  // ====== Report View ======
+  function getReportFilters(){
+    return {
+      start: reportStartDate, end: reportEndDate,
+      setup: repSetup || '', result: repResult || '',
+      tags: repTags.slice(), tagsAll: !!repTagsAll,
+      dayType: '' // report does not filter by day-type by default
+    };
+  }
+
+  function filteredData(){
+    const f = getReportFilters();
+    if(!f.start && !f.end && !f.setup && !f.result && (!f.tags || f.tags.length===0)) return dailyData;
+    return filteredClone(dailyData, f);
+  }
+
+  function updateReportView(){
+    updateHUD();
+    const data = filteredData();
+    const dates = Object.keys(data).sort();
+
+    // KPIs based on unit mode
+    if(unitMode==='comp'){
+      const start = compStart>0 ? compStart : 100000;
+      const risk = compRiskPct>0 ? compRiskPct : 0.3;
+      const comp = aggregateCompounding(data, start, risk);
+
+      $('#kpiTrades').textContent = comp.totalTrades;
+      $('#kpiNet').textContent = `$${fmt(comp.netUSD,2)}`;
+      const winRate = comp.totalTrades? (comp.totalWins/comp.totalTrades*100):0;
+      $('#kpiWR').textContent = `${fmt(winRate,1)}%`;
+      $('#kpiExp').textContent = `$${fmt(comp.expUSDperTrade,2)}`;
+      $('#kpiDD').textContent = `$${fmt(comp.maxDD,2)}`;
+
+      if(dates.length>0){
+        const minD = new Date(dates[0]); const maxD = new Date(dates[dates.length-1]);
+        const daySpan = Math.floor((maxD - minD)/86400000) + 1;
+        const months = new Set(dates.map(d=>d.slice(0,7)));
+        const quarters = new Set(dates.map(d=>`${new Date(d).getFullYear()}-Q${Math.floor(new Date(d).getMonth()/3)+1}`));
+        const years = new Set(dates.map(d=>new Date(d).getFullYear()));
+        const activeDays = dates.length;
+        const avgPerDay = activeDays>0 ? comp.totalTrades/activeDays : 0;
+        $('#kpiDaySpan').textContent = daySpan;
+        $('#kpiMonthSpan').textContent = months.size;
+        $('#kpiQuarterSpan').textContent = quarters.size;
+        $('#kpiYearSpan').textContent = years.size;
+        $('#kpiAvgPerDay').textContent = fmt(avgPerDay,2);
+      }else{
+        $('#kpiDaySpan').textContent = 0; $('#kpiMonthSpan').textContent = 0; $('#kpiQuarterSpan').textContent = 0;
+        $('#kpiYearSpan').textContent = 0; $('#kpiAvgPerDay').textContent = '0.00';
+      }
+
+      // Chart
+      const ctx = $('#equityChart')?.getContext('2d');
+      if(ctx && !equityChart){
+        equityChart = new Chart(ctx,{
+          type:'line',
+          data:{labels:[], datasets:[{label:'Portfolio Value ($)', data:[], fill:true, tension:.15, borderWidth:2}]},
+          options:{
+            responsive:true, maintainAspectRatio:false,
+            scales:{ x:{grid:{color:'#2b315d'}}, y:{grid:{color:'#2b315d'}, ticks:{callback:(v)=> `$${fmt(v,0)}`}}},
+            plugins:{ legend:{labels:{color:'#cfd2e6'}}, tooltip:{callbacks:{label:(ctx)=>`$${fmt(ctx.parsed.y,2)}`}} }
+          }
+        });
+      }
+      if(equityChart){
+        const grouped = groupSeries(comp.series, granularity, 'value');
+        equityChart.data.labels = grouped.labels;
+        equityChart.data.datasets[0].data = grouped.values;
+        const perf = comp.netUSD;
+        const color = perf>0?'#27be69':(perf<0?'#ff5a6b':'#ffc857');
+        equityChart.data.datasets[0].borderColor = color;
+        equityChart.data.datasets[0].backgroundColor = color+'22';
+        equityChart.data.datasets[0].label = 'Portfolio Value ($)';
+        equityChart.update();
+      }
+      $('#startEquity').textContent = `$${fmt(comp.start,2)}`;
+      $('#currEquity').textContent = `$${fmt(comp.current,2)}`;
+      $('#peakEquity').textContent = `$${fmt(Math.max(...comp.series.map(s=>s.value), comp.start),2)}`;
+      $('#chartDD').textContent = `$${fmt(comp.maxDD,2)}`;
+
+    } else {
+      const aggR = aggregateR(data);
+      $('#kpiTrades').textContent = aggR.trades;
+      const netDisp = unitMode==='flat' ? `$${fmt(aggR.netR * rValue,2)}` : `${fmt(aggR.netR,2)}R`;
+      const expDisp = unitMode==='flat' ? `$${fmt(aggR.exp * rValue,2)}` : `${fmt(aggR.exp,2)}R`;
+      const ddDisp = unitMode==='flat' ? `$${fmt(aggR.maxDD * rValue,2)}` : `${fmt(aggR.maxDD,2)}R`;
+      $('#kpiNet').textContent = netDisp;
+      $('#kpiWR').textContent = `${fmt(aggR.trades? (aggR.totalWins/aggR.trades*100):0,1)}%`;
+      $('#kpiExp').textContent = expDisp;
+      $('#kpiDD').textContent = ddDisp;
+
+      if(dates.length>0){
+        const minD = new Date(dates[0]); const maxD = new Date(dates[dates.length-1]);
+        const daySpan = Math.floor((maxD - minD)/86400000) + 1;
+        const months = new Set(dates.map(d=>d.slice(0,7)));
+        const quarters = new Set(dates.map(d=>`${new Date(d).getFullYear()}-Q${Math.floor(new Date(d).getMonth()/3)+1}`));
+        const years = new Set(dates.map(d=>new Date(d).getFullYear()));
+        const activeDays = dates.length;
+        const avgPerDay = activeDays>0 ? aggR.trades/activeDays : 0;
+        $('#kpiDaySpan').textContent = daySpan; $('#kpiMonthSpan').textContent = months.size; $('#kpiQuarterSpan').textContent = quarters.size;
+        $('#kpiYearSpan').textContent = years.size; $('#kpiAvgPerDay').textContent = fmt(avgPerDay,2);
+      }else{
+        $('#kpiDaySpan').textContent = 0; $('#kpiMonthSpan').textContent = 0; $('#kpiQuarterSpan').textContent = 0; $('#kpiYearSpan').textContent = 0; $('#kpiAvgPerDay').textContent = '0.00';
+      }
+
+      const ctx = $('#equityChart')?.getContext('2d');
+      if(ctx && !equityChart){
+        equityChart = new Chart(ctx,{
+          type:'line',
+          data:{labels:[], datasets:[{label:'Cumulative Equity', data:[], fill:true, tension:.15, borderWidth:2}]},
+          options:{
+            responsive:true, maintainAspectRatio:false,
+            scales:{ x:{grid:{color:'#2b315d'}}, y:{grid:{color:'#2b315d'}, ticks:{callback:(v)=> unitMode==='flat'? `$${fmt(v,0)}` : `${v}R`}}},
+            plugins:{ legend:{labels:{color:'#cfd2e6'}}, tooltip:{callbacks:{label:(ctx)=> unitMode==='flat'? `$${fmt(ctx.parsed.y,2)}` : `${fmt(ctx.parsed.y,2)}R` }} }
+          }
+        });
+      }
+      if(equityChart){
+        const grouped = groupSeries(aggR.dailySeries, granularity, 'value');
+        const vals = unitMode==='flat' ? grouped.values.map(v=> v*rValue) : grouped.values;
+        equityChart.data.labels = grouped.labels;
+        equityChart.data.datasets[0].data = vals;
+        const color = aggR.netR>0?'#27be69':(aggR.netR<0?'#ff5a6b':'#ffc857');
+        equityChart.data.datasets[0].borderColor = color;
+        equityChart.data.datasets[0].backgroundColor = color+'22';
+        equityChart.data.datasets[0].label = unitMode==='flat' ? 'Cumulative Equity ($)' : 'Cumulative Equity (R)';
+        equityChart.update();
+      }
+      $('#startEquity').textContent = unitMode==='flat' ? `$${fmt(0,2)}` : `${fmt(0,2)}R`;
+      const totalEquity = (aggregateR(data).dailySeries.slice(-1)[0]?.value)||0;
+      const peak = (()=>{ let p=0; aggregateR(data).dailySeries.forEach(pt=>{ p=Math.max(p,pt.value); }); return p; })();
+      $('#currEquity').textContent = unitMode==='flat' ? `$${fmt(totalEquity*rValue,2)}` : `${fmt(totalEquity,2)}R`;
+      $('#peakEquity').textContent = unitMode==='flat' ? `$${fmt(peak*rValue,2)}` : `${fmt(peak,2)}R`;
+      $('#chartDD').textContent = unitMode==='flat' ? `$${fmt(aggregateR(data).maxDD*rValue,2)}` : `${fmt(aggregateR(data).maxDD,2)}R`;
+    }
+
+    // Setup cards
+    const container = $('#setupCards'); container.innerHTML='';
+    const statsBySetup = {}; SETUPS.forEach(s=> statsBySetup[s]={wins:0, losses:0});
+    for(const d of dates){
+      for(const ev of (data[d]._events||[])){
+        const k = ev.setup;
+        if(!statsBySetup[k]) statsBySetup[k]={wins:0, losses:0};
+        if(ev.outcome==='W') statsBySetup[k].wins++; else statsBySetup[k].losses++;
+      }
+    }
+    SETUPS.forEach(s=>{
+      const st = statsBySetup[s] || {wins:0, losses:0};
+      const t = st.wins + st.losses; if(t===0) return;
+      const r = (st.wins*2) - st.losses;
+      const wr = t? (st.wins/t*100):0;
+      const exp = t? (r/t) : 0;
+      const valueMain = unitMode==='flat' ? `$${fmt(r*rValue,2)}` : `${fmt(r,2)}R`;
+      const card = document.createElement('div');
+      card.className='kpi';
+      card.innerHTML = `
+        <div class="label">${s}</div>
+        <div class="value">${valueMain}</div>
+        <div class="muted" style="margin-top:6px">Trades: <b>${t}</b> • Win%: <b>${fmt(wr,1)}%</b> • Exp: <b>${unitMode==='flat'? `$${fmt(exp*rValue,2)}` : `${fmt(exp,2)}R`}</b></div>`;
+      container.appendChild(card);
+    });
+    if(container.children.length===0){ container.innerHTML = `<div class="muted">No setup data in the selected range.</div>`; }
+
+    // Daily outcomes: use ACTIVE DAYS (dates with ≥1 trade in filtered dataset)
+    let win=0, lose=0, be=0;
+    dates.forEach(d=>{
+      const dr = (data[d]._events||[]).reduce((acc,ev)=> acc + (ev.outcome==='W'?2:-1), 0);
+      if(dr>0) win++; else if(dr<0) lose++; else be++;
+    });
+    const totalDays = dates.length || 1;
+    $('#winDays').textContent = `${win} (${fmt(win/totalDays*100,1)}%)`;
+    $('#loseDays').textContent = `${lose} (${fmt(lose/totalDays*100,1)}%)`;
+    $('#beDays').textContent = `${be} (${fmt(be/totalDays*100,1)}%)`;
+
+    // Monthly table (R math)
+    const mBody = $('#monthlyBody'); mBody.innerHTML='';
+    const monthly = {};
+    dates.forEach(d=>{
+      const m = d.slice(0,7);
+      if(!monthly[m]) monthly[m]={wins:0, losses:0, cum:0, peak:0, dd:0};
+      let dr=0;
+      (data[d]._events||[]).forEach(ev=>{ if(ev.outcome==='W'){ monthly[m].wins++; dr+=2; } else { monthly[m].losses++; dr-=1; }});
+      monthly[m].cum += dr;
+      monthly[m].peak = Math.max(monthly[m].peak, monthly[m].cum);
+      monthly[m].dd = Math.max(monthly[m].dd, monthly[m].peak - monthly[m].cum);
+    });
+    const monthsKeys = Object.keys(monthly).sort();
+    if(monthsKeys.length===0){
+      mBody.innerHTML = `<tr><td colspan="6" class="muted" style="text-align:center">No data</td></tr>`;
+    }else{
+      monthsKeys.forEach(m=>{
+        const x = monthly[m];
+        const trades = x.wins + x.losses;
+        const net = (x.wins*2)-x.losses;
+        const wr = trades? (x.wins/trades*100):0;
+        const exp = trades? (net/trades) : 0;
+        const netDisp = unitMode==='flat' ? `$${fmt(net*rValue,2)}` : `${fmt(net,2)}R`;
+        const expDisp = unitMode==='flat' ? `$${fmt(exp*rValue,2)}` : `${fmt(exp,2)}R`;
+        const ddDisp = unitMode==='flat' ? `$${fmt(x.dd*rValue,2)}` : `${fmt(x.dd,2)}R`;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${m.replace('-','/')}</td>
+          <td>${trades}</td>
+          <td style="color:${net>0?'var(--green)':net<0?'var(--red)':'var(--amber)'}">${netDisp}</td>
+          <td>${fmt(wr,1)}%</td>
+          <td style="color:${exp>0?'var(--green)':exp<0?'var(--red)':'var(--amber)'}">${expDisp}</td>
+          <td style="color:var(--red)">${ddDisp}</td>`;
+        mBody.appendChild(tr);
+      });
+    }
+
+    // Losing streaks by trades
+    const tbody = $('#streakBody'); tbody.innerHTML='';
+    const freq = computeLosingTradeStreaks(data);
+    const keys = Object.keys(freq).map(n=>+n).sort((a,b)=>a-b);
+    if(keys.length===0){
+      tbody.innerHTML = `<tr><td colspan="2" class="muted" style="text-align:center">No losing streaks of 2+ trades</td></tr>`;
+    }else{
+      keys.forEach(k=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${k}</td><td>${freq[k]}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+  }
+
+  function computeLosingTradeStreaks(dataObj){
+    const seq = buildTradeSequence(dataObj).map(x=> x>0 ? 'W':'L');
+    const freq = {}; let cur=0;
+    seq.forEach(out=>{
+      if(out==='L'){ cur++; } else { if(cur>=2){ freq[cur]=(freq[cur]||0)+1; } cur=0; }
+    });
+    if(cur>=2){ freq[cur]=(freq[cur]||0)+1; }
+    return freq;
+  }
+  function getTradeOutcomes(dataObj){
+    const arr = [];
+    for(const d of Object.keys(dataObj)){
+      for(const ev of (dataObj[d]._events||[])){
+        arr.push(ev.outcome==='W'? 2 : -1);
+      }
+    }
+    return arr;
+  }
+  function buildTradeSequence(dataObj){
+    const dates = Object.keys(dataObj).sort();
+    const seq = [];
+    dates.forEach(date=>{
+      const day = dataObj[date];
+      (day._events||[]).forEach(ev=> seq.push(ev.outcome));
+    });
+    return seq.map(ch=> ch==='W' ? 2 : -1);
+  }
+  </script>
+  <!-- ========== CORE SCRIPT (Part 2) ==========
+       UI wiring, All Trades, Tag Manager, File I/O, Worker, Boot -->
+  <script>
+  // ===== Screenshot paste/drag =====
+  function fileToDataURL(fileOrBlob, cb){ const reader=new FileReader(); reader.onload=()=>cb(reader.result); reader.readAsDataURL(fileOrBlob); }
+  function wireScreenshot(){
+    const drop = $('#shotDrop');
+    drop?.addEventListener('click', ()=> drop.focus());
+    ['focus','blur','dragenter','dragleave'].forEach(ev=>{
+      drop?.addEventListener(ev, ()=>{ if(ev==='focus' || ev==='dragenter') drop.classList.add('focus'); else drop.classList.remove('focus'); });
+    });
+    drop?.addEventListener('dragover', (e)=>{ e.preventDefault(); });
+    drop?.addEventListener('drop', (e)=>{
+      e.preventDefault();
+      const file = e.dataTransfer.files?.[0]; if(!file || !file.type.startsWith('image/')) return alert('Drop an image file.');
+      fileToDataURL(file, (dataUrl)=>{
+        const day = touchDay(currentDate);
+        day.screenshot = dataUrl; updateScreenshotView(); saveLocal(); showToast('Screenshot added');
+      });
+    });
+    drop?.addEventListener('paste', (e)=>{
+      const items = e.clipboardData && e.clipboardData.items; if(!items) return;
+      for(const it of items){
+        if(it.type && it.type.indexOf('image') !== -1){
+          const file = it.getAsFile(); if(!file) continue;
+          fileToDataURL(file, (dataUrl)=>{
+            const day = touchDay(currentDate);
+            day.screenshot = dataUrl; updateScreenshotView(); saveLocal(); showToast('Screenshot pasted');
+          });
+          e.preventDefault(); return;
+        }
+      }
+      alert('Clipboard has no image. Copy an image first, then paste.');
+    });
+    $('#openShot')?.addEventListener('click', ()=>{
+      const dataUrl = getDay(currentDate)?.screenshot; if(!dataUrl) return;
+      const w = window.open(); if(w){ w.document.write(`<img src="${dataUrl}" style="max-width:100%; height:auto">`); }
+    });
+    $('#clearShot')?.addEventListener('click', ()=>{
+      const day = getDay(currentDate); if(!day?.screenshot) return;
+      const snap = day.screenshot;
+      pushUndo(()=>{ touchDay(currentDate).screenshot = snap; updateScreenshotView(); saveLocal(); });
+      delete day.screenshot; updateScreenshotView(); saveLocal(); showToast('Screenshot cleared');
+      // if day becomes empty after clearing and no note/events, leave cleanup to Reset Day
+    });
+  }
+
+  // ===== Recording trades (+Quick Tags) =====
+  function newEventId(date){ return `${date}-${Math.random().toString(36).slice(2,8)}${Date.now().toString(36).slice(-4)}`; }
+  function record(type){
+    const day = touchDay(currentDate);
+    const ev = { id:newEventId(currentDate), setup: currentSetup, outcome: type==='win' ? 'W':'L', tags: [] };
+    addTagsToEvent(ev, quickTags);
+    day._events.push(ev);
+    deriveAggregatesForDay(day);
+    showToast(`${type==='win'?'+2R win':'-1R loss'} • ${currentSetup} • ${dispDate(currentDate)}`);
+    updateBacktestView(); updateReportView(); saveLocal();
+  }
+
+  // Quick Tags chips
+  function renderQuickTags(){
+    const box = $('#quickTagsBox'); if(!box) return;
+    // Remove existing chips (keep input)
+    [...box.querySelectorAll('.chip')].forEach(n=> n.remove());
+    quickTags.forEach(tag=>{
+      const c=document.createElement('span'); c.className='chip'; c.innerHTML=`${tag} <span class="xbtn" title="Remove">×</span>`;
+      c.querySelector('.xbtn').onclick = ()=>{ quickTags = quickTags.filter(t=>t!==tag); renderQuickTags(); saveLocal(); };
+      box.insertBefore(c, $('#quickTagInput'));
+    });
+  }
+  $('#quickTagInput')?.addEventListener('keydown', (e)=>{
+    if(e.key==='Enter'){
+      const v = e.currentTarget.value.trim(); if(!v) return;
+      ensureTag(v); if(!quickTags.includes(v)) quickTags.push(v);
+      e.currentTarget.value=''; renderQuickTags(); saveLocal();
+    }
+  });
+
+  // ===== All Trades rendering =====
+  let atSelection = new Set(); let atHoverDate = null;
+
+  function getATFilters(){
+    return {
+      start: atStartDate, end: atEndDate,
+      setup: atSetup || '',
+      result: atResult || '',
+      dayType: atDayType || '',
+      tags: atTags.slice(), tagsAll: !!atTagsAll
+    };
+  }
+
+  function renderAllTrades(){
+    // populate tags multiselects
+    const repTagsMulti = $('#repTagsMulti'), atTagsMulti = $('#atTagsMulti');
+    function fillSel(sel){
+      if(!sel) return;
+      const cur = new Set((sel.value||'').split('|'));
+      sel.innerHTML = '';
+      tagCatalog.forEach(t=>{
+        const opt=document.createElement('option'); opt.value=t; opt.textContent=t;
+        if(cur.has(t)) opt.selected=true; sel.appendChild(opt);
+      });
+    }
+    fillSel(repTagsMulti); fillSel(atTagsMulti);
+
+    // Build table rows from FILTERED clone using AT filters (but day type from full dataset)
+    const f = getATFilters();
+    const clone = filteredClone(dailyData, f);
+    const rows = flattenTrades(clone, true);
+
+    const body = $('#atTbody'); body.innerHTML='';
+    if(rows.length===0){ body.innerHTML = `<tr><td colspan="9" class="muted" style="text-align:center">No trades yet</td></tr>`; return; }
+
+    rows.sort((a,b)=> a.date<b.date? -1 : a.date>b.date? 1 : 0);
+    rows.forEach(r=>{
+      const tr = document.createElement('tr');
+      const checked = atSelection.has(r.id) ? 'checked' : '';
+      const tagsHtml = (r.tags||[]).map(t=>`<span class="chip">${t}</span>`).join(' ');
+      const dayTypeClass = r.dayType==='Winning'?'ok': r.dayType==='Losing'?'danger': 'amber';
+      tr.innerHTML = `
+        <td class="col-select"><input type="checkbox" data-id="${r.id}" ${checked}></td>
+        <td>${dispDate(r.date)}</td>
+        <td>${r.setup}</td>
+        <td>${r.outcome==='W'?'Win':'Loss'}</td>
+        <td>${r.r}</td>
+        <td class="${dayTypeClass}">${r.dayType}</td>
+        <td>${tagsHtml || '<span class="muted">—</span>'}</td>
+        <td>${r.note ? r.note.replace(/[\n\r]/g,' ') : '<span class="muted">—</span>'}</td>
+        <td class="col-pic"><span class="pic-icon" data-date="${r.date}" title="Preview">IMG</span></td>`;
+      body.appendChild(tr);
+    });
+
+    // Selection
+    body.querySelectorAll('input[type="checkbox"][data-id]').forEach(ch=>{
+      ch.onchange = ()=>{ const id = ch.getAttribute('data-id'); if(ch.checked) atSelection.add(id); else atSelection.delete(id); };
+    });
+    $('#atHeadCheck').onchange = ()=>{
+      const head = $('#atHeadCheck').checked;
+      body.querySelectorAll('input[type="checkbox"][data-id]').forEach(ch=>{
+        ch.checked = head; const id=ch.getAttribute('data-id'); if(head) atSelection.add(id); else atSelection.delete(id);
+      });
+    };
+
+    // Hover preview
+    function setPreviewByDate(date){
+      const holder = $('#atPreviewHolder');
+      holder.innerHTML='';
+      const img=document.createElement('img'); const shot = getDay(date)?.screenshot;
+      if(shot){ img.src=shot; holder.appendChild(img); $('#atPrevMeta').textContent = `Screenshot • ${dispDate(date)}`; }
+      else { holder.innerHTML = `<span class="muted">No screenshot for ${dispDate(date)}</span>`; $('#atPrevMeta').textContent = ''; }
+    }
+    body.querySelectorAll('.pic-icon').forEach(el=>{
+      el.addEventListener('mouseenter', ()=>{ atHoverDate = el.getAttribute('data-date'); setPreviewByDate(atHoverDate); });
+      el.addEventListener('click', ()=>{ atHoverDate = el.getAttribute('data-date'); setPreviewByDate(atHoverDate); });
+    });
+
+    // Open/Clear buttons
+    $('#atOpenShot').onclick = ()=>{
+      if(!atHoverDate) return;
+      const dataUrl = getDay(atHoverDate)?.screenshot; if(!dataUrl) return;
+      const w = window.open(); if(w){ w.document.write(`<img src="${dataUrl}" style="max-width:100%; height:auto">`); }
+    };
+    $('#atClearShot').onclick = ()=>{
+      if(!atHoverDate) return;
+      const d = getDay(atHoverDate); if(!d?.screenshot) return;
+      const snap = d.screenshot;
+      pushUndo(()=>{ touchDay(atHoverDate).screenshot = snap; renderAllTrades(); updateScreenshotView(); saveLocal(); });
+      delete d.screenshot; renderAllTrades(); if(currentDate===atHoverDate) updateScreenshotView(); saveLocal(); showToast('Screenshot cleared');
+    };
+  }
+
+  // ===== All Trades bulk operations =====
+  function forEachSelectedEvent(cb){
+    const idToDate = {};
+    // Build quick index
+    for(const d of Object.keys(dailyData)){
+      for(const ev of (dailyData[d]._events||[])) idToDate[ev.id]=d;
+    }
+    atSelection.forEach(id=>{
+      const date = idToDate[id]; if(!date) return;
+      const day = dailyData[date]; if(!day) return;
+      const idx = day._events.findIndex(e=> e.id===id); if(idx<0) return;
+      cb({date, day, idx, ev: day._events[idx]});
+    });
+  }
+
+  function applyBulkOps({addTags=[], removeTags=[], doDelete=false}){
+    const snapshot = JSON.parse(JSON.stringify(dailyData));
+    pushUndo(()=>{ dailyData = snapshot; renderAllTrades(); updateReportView(); updateBacktestView(); saveLocal(); });
+    let changes=0;
+    forEachSelectedEvent(({date, day, idx, ev})=>{
+      if(addTags.length){ addTagsToEvent(ev, addTags); changes++; }
+      if(removeTags.length){ removeTagsFromEvent(ev, removeTags); changes++; }
+      if(doDelete){ day._events.splice(idx,1); changes++; }
+      deriveAggregatesForDay(day);
+      if((day._events?.length||0)===0 && (!day.note || day.note.trim()==='') && !day.screenshot){
+        delete dailyData[date];
+      }
+    });
+    if(changes===0){ showToast('No changes applied'); return; }
+    atSelection.clear();
+    renderAllTrades(); updateReportView(); updateBacktestView(); saveLocal();
+    showToast('Bulk operation applied', undoStack.length ? undoStack[undoStack.length-1] : undefined);
+  }
+
+  $('#atSelectAll')?.addEventListener('click', ()=>{
+    document.querySelectorAll('#atTbody input[type="checkbox"][data-id]').forEach(ch=>{ ch.checked=true; atSelection.add(ch.getAttribute('data-id')); });
+  });
+  $('#atClearSel')?.addEventListener('click', ()=>{ atSelection.clear(); document.querySelectorAll('#atTbody input[type="checkbox"][data-id]').forEach(ch=> ch.checked=false); });
+  $('#atBulkAddTag')?.addEventListener('click', ()=>{
+    const t = ($('#atBulkTagInput').value||'').trim(); if(!t) return alert('Enter a tag');
+    ensureTag(t); applyBulkOps({addTags:[t]});
+  });
+  $('#atBulkRemoveTag')?.addEventListener('click', ()=>{
+    const t = ($('#atBulkTagInput').value||'').trim(); if(!t) return alert('Enter a tag');
+    applyBulkOps({removeTags:[t]});
+  });
+  $('#atBulkDelete')?.addEventListener('click', ()=>{
+    if(atSelection.size===0) return alert('Select rows first');
+    if(!confirm('Delete selected trades? This cannot be undone except via Undo toast.')) return;
+    applyBulkOps({doDelete:true});
+  });
+
+  // Export All Trades CSV
+  $('#atExport')?.addEventListener('click', ()=>{
+    const rows = flattenTrades(filteredClone(dailyData, getATFilters()), true);
+    if(rows.length===0) { alert('No trades to export'); return; }
+    let csv = 'Date,Setup,Result,R,Day Type,Tags,Note\n';
+    rows.forEach(r=>{
+      const tags = (r.tags||[]).join('|');
+      const note = (r.note||'').replace(/[\n\r,]/g,' ');
+      csv += `${dispDate(r.date)},${r.setup},${r.outcome==='W'?'Win':'Loss'},${r.r},${r.dayType},${tags},${note}\n`;
+    });
+    const blob = new Blob([csv],{type:'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download=`all_trades_${new Date().toISOString().slice(0,10).replaceAll('-','_')}.csv`;
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    showToast('All Trades CSV exported');
+  });
+
+  // ===== Tag Manager =====
+  function openTagMgr(){ $('#tagModalBackdrop').classList.add('show'); $('#tagModal').classList.add('show'); renderTagList(); }
+  function closeTagMgr(){ $('#tagModalBackdrop').classList.remove('show'); $('#tagModal').classList.remove('show'); }
+  function renderTagList(){
+    const box = $('#tagList'); box.innerHTML='';
+    if(tagCatalog.length===0){ box.innerHTML = `<div class="muted">No tags yet</div>`; return; }
+    tagCatalog.sort((a,b)=> a.localeCompare(b)).forEach(t=>{
+      const row=document.createElement('div'); row.className='item';
+      row.innerHTML = `<div>${t}</div><div><button class="btn soft" data-insert="${t}">Insert</button></div>`;
+      box.appendChild(row);
+    });
+    box.querySelectorAll('[data-insert]').forEach(b=>{
+      b.onclick=()=>{ const t=b.getAttribute('data-insert'); const inp=$('#newTagInput'); inp.value=t; inp.focus(); inp.setSelectionRange(0,t.length); };
+    });
+  }
+  $('#openTagMgrBtn')?.addEventListener('click', openTagMgr);
+  $('#closeTagMgrBtn')?.addEventListener('click', closeTagMgr);
+  $('#tagModalBackdrop')?.addEventListener('click', closeTagMgr);
+
+  $('#addTagBtn')?.addEventListener('click', ()=>{
+    const v = ($('#newTagInput').value||'').trim(); if(!v) return;
+    ensureTag(v); renderTagList(); renderAllTrades(); saveLocal(); showToast(`Tag “${v}” added`);
+  });
+  $('#renameTagBtn')?.addEventListener('click', ()=>{
+    const from = ($('#renameFrom').value||'').trim(); const to = ($('#renameTo').value||'').trim();
+    if(!from || !to) return alert('Enter both old and new names');
+    if(from===to) return;
+    if(!tagCatalog.includes(from)) return alert('Old tag not found');
+    ensureTag(to);
+    const snapshot = JSON.parse(JSON.stringify(dailyData));
+    pushUndo(()=>{ dailyData = snapshot; renderAllTrades(); updateReportView(); saveLocal(); });
+
+    // Update events
+    for(const d of Object.keys(dailyData)){
+      (dailyData[d]._events||[]).forEach(ev=>{
+        if(ev.tags && ev.tags.includes(from)){
+          ev.tags = ev.tags.map(t=> t===from ? to : t);
+        }
+      });
+    }
+    // Update catalog
+    tagCatalog = tagCatalog.filter(t=> t!==from);
+    renderTagList(); renderAllTrades(); updateReportView(); saveLocal(); showToast(`Renamed “${from}” → “${to}”`);
+  });
+  $('#deleteTagBtn')?.addEventListener('click', ()=>{
+    const t = ($('#deleteTagInput').value||'').trim(); if(!t) return;
+    if(!tagCatalog.includes(t)) return alert('Tag not found');
+    const snapshot = JSON.parse(JSON.stringify(dailyData));
+    pushUndo(()=>{ dailyData = snapshot; renderAllTrades(); updateReportView(); saveLocal(); });
+
+    for(const d of Object.keys(dailyData)){
+      (dailyData[d]._events||[]).forEach(ev=>{ if(ev.tags) ev.tags = ev.tags.filter(x=> x!==t); });
+    }
+    tagCatalog = tagCatalog.filter(x=> x!==t);
+    renderTagList(); renderAllTrades(); updateReportView(); saveLocal(); showToast(`Tag “${t}” deleted from all trades`);
+  });
+
+  // ===== Report & All Trades filter wiring =====
+  // Report controls
+  $('#applyRange')?.addEventListener('click', ()=>{
+    const s=$('#startDate').value||null, e=$('#endDate').value||null;
+    if(s && e && s>e) return alert('Start must be before end.');
+    reportStartDate=s; reportEndDate=e;
+    repSetup = $('#repSetupSel').value||'';
+    repResult = $('#repResultSel').value||'';
+    repTags = Array.from($('#repTagsMulti').selectedOptions||[]).map(o=>o.value);
+    repTagsAll = $('#repTagsAll').checked;
+    updateReportView(); saveLocal();
+  });
+  $('#clearRangeBtn')?.addEventListener('click', ()=>{
+    reportStartDate = reportEndDate = null;
+    repSetup = repResult = ''; repTags = []; repTagsAll=false;
+    $('#startDate').value=''; $('#endDate').value='';
+    $('#repSetupSel').value=''; $('#repResultSel').value='';
+    $('#repTagsMulti').value='';
+    $('#repTagsAll').checked=false;
+    updateReportView(); saveLocal();
+  });
+
+  // All Trades controls
+  $('#atApply')?.addEventListener('click', ()=>{
+    const s=$('#atStartDate').value||null, e=$('#atEndDate').value||null;
+    if(s && e && s>e) return alert('Start must be before end.');
+    atStartDate=s; atEndDate=e;
+    atSetup = $('#atSetupSel').value||'';
+    atResult = $('#atResultSel').value||'';
+    atDayType = $('#atDayTypeSel').value||'';
+    atTags = Array.from($('#atTagsMulti').selectedOptions||[]).map(o=>o.value);
+    atTagsAll = $('#atTagsAll').checked;
+    atSelection.clear();
+    renderAllTrades(); saveLocal();
+  });
+  $('#atClear')?.addEventListener('click', ()=>{
+    atStartDate=atEndDate=null; atSetup=atResult=atDayType=''; atTags=[]; atTagsAll=false; atSelection.clear();
+    $('#atStartDate').value=''; $('#atEndDate').value='';
+    $('#atSetupSel').value=''; $('#atResultSel').value=''; $('#atDayTypeSel').value='';
+    $('#atTagsMulti').value=''; $('#atTagsAll').checked=false;
+    renderAllTrades(); saveLocal();
+  });
+
+  // Granularity
+  $$('#granSeg button').forEach(b=>{
+    b.onclick = ()=>{ $$('#granSeg button').forEach(x=>x.classList.remove('active')); b.classList.add('active'); granularity=b.getAttribute('data-gran'); updateReportView(); saveLocal(); };
+  });
+
+  // Unit mode
+  $('#unitR')?.addEventListener('click', ()=>{ unitMode='R'; updateReportView(); saveLocal(); });
+  $('#unitDollarFlat')?.addEventListener('click', ()=>{ unitMode='flat'; updateReportView(); saveLocal(); });
+  $('#unitDollarComp')?.addEventListener('click', ()=>{ unitMode='comp'; updateReportView(); saveLocal(); });
+
+  // File I/O (explicit Save includes screenshots)
+  function saveToFile(){
+    if(Object.keys(dailyData).length===0){ alert('No data to save'); return; }
+    const name = prompt('Save as (file name, no extension):', currentFileName || 'backtest'); if(!name) return;
+    const saveData = { fileName: name, data: dailyData, currentDate, savedAt:new Date().toISOString(), version:'5.2', tagCatalog };
+    const blob = new Blob([JSON.stringify(saveData,null,2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download = `${name.replace(/[^a-z0-9]/gi,'_')}_backtest.json`;
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    currentFileName = name; saveLocal(); showToast(`Saved “${name}”`);
+  }
+  function loadFromFile(file){
+    const reader = new FileReader();
+    reader.onload = (e)=>{
+      try{
+        const loaded = JSON.parse(e.target.result);
+        if(!loaded.data) { alert('Invalid file format'); return; }
+        if(Object.keys(dailyData).length>0){
+          if(!confirm('Loading will replace current data. Continue?')) return;
+        }
+        dailyData = loaded.data || {};
+        tagCatalog = Array.isArray(loaded.tagCatalog)? loaded.tagCatalog : tagCatalog;
+        currentFileName = loaded.fileName || null;
+        if(loaded.currentDate) currentDate = loaded.currentDate;
+        migrateIfNeeded();
+        saveLocal();
+        updateBacktestView(); updateReportView(); renderAllTrades();
+        showToast(`Loaded${currentFileName? ` “${currentFileName}”`:''}`);
+      }catch(err){ alert('Failed to read file'); }
+    };
+    reader.readAsText(file);
+  }
+  function exportCSV(){
+    if(Object.keys(dailyData).length===0){ alert('No data to export'); return; }
+    let csv = 'Date,Setup,Wins,Losses,Total Trades,Win Rate (%),Total R,Expectancy R,Note\n';
+    const dates = Object.keys(dailyData).sort();
+    let allW=0, allL=0;
+    dates.forEach(date=>{
+      const note = (dailyData[date].note || '').replace(/[\n\r,]/g,' ');
+      for(const [setup,v] of Object.entries(dailyData[date])){
+        if(['note','_events','screenshot'].includes(setup)) continue;
+        const w=v.wins||0, l=v.losses||0, t=w+l, r=(w*2)-l, wr=t? (w/t*100):0, exp=t? r/t:0;
+        allW+=w; allL+=l;
+        csv += `${dispDate(date)},${setup},${w},${l},${t},${fmt(wr,1)},${fmt(r,1)},${fmt(exp,2)},${note}\n`;
+      }
+    });
+    const t=allW+allL, r=(allW*2)-allL, wr=t? (allW/t*100):0, exp=t? r/t:0;
+    csv += `\nTOTAL,ALL,${allW},${allL},${t},${fmt(wr,1)},${fmt(r,1)},${fmt(exp,2)},\n`;
+    const blob = new Blob([csv],{type:'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    const fname = (currentFileName? currentFileName.replace(/[^a-z0-9]/gi,'_') : 'trading_backtest') + `_results_${new Date().toISOString().slice(0,10).replaceAll('-','_')}.csv`;
+    a.href=url; a.download=fname; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    showToast('CSV exported');
+  }
+
+  // Buttons
+  $('#saveBtn')?.addEventListener('click', saveToFile);
+  $('#loadBtn')?.addEventListener('click', ()=> $('#loadInput').click());
+  $('#loadInput')?.addEventListener('change', (e)=>{ const f = e.target.files && e.target.files[0]; if(f) loadFromFile(f); e.target.value=''; });
+  $('#exportBtn')?.addEventListener('click', exportCSV);
+
+  // Date navigation
+  $('#dateInput')?.addEventListener('change', ()=>{ currentDate = $('#dateInput').value || currentDate; updateBacktestView(); saveLocal(); });
+  $('#prevDay')?.addEventListener('click', ()=>{ const dt=new Date(currentDate); dt.setDate(dt.getDate()-1); currentDate=dt.toISOString().slice(0,10); updateBacktestView(); saveLocal(); });
+  $('#nextDay')?.addEventListener('click', ()=>{ const dt=new Date(currentDate); dt.setDate(dt.getDate()+1); currentDate=dt.toISOString().slice(0,10); updateBacktestView(); saveLocal(); });
+  $('#todayBtn')?.addEventListener('click', ()=>{ currentDate = new Date().toISOString().slice(0,10); updateBacktestView(); saveLocal(); });
+
+  // Setup buttons
+  document.querySelectorAll('[data-setup]')?.forEach(btn=>{
+    btn.onclick = ()=>{ document.querySelectorAll('[data-setup]').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); currentSetup = btn.getAttribute('data-setup'); saveLocal(); };
+  });
+
+  // Win/Lose
+  $('#winBtn')?.addEventListener('click', ()=> record('win'));
+  $('#loseBtn')?.addEventListener('click', ()=> record('lose'));
+
+  // Reset day/all
+  $('#resetDayBtn')?.addEventListener('click', ()=>{
+    const day = getDay(currentDate); if(!day) return;
+    const snapshot = JSON.parse(JSON.stringify(dailyData));
+    pushUndo(()=>{ dailyData = snapshot; updateBacktestView(); updateReportView(); saveLocal(); });
+    delete dailyData[currentDate];
+    showToast(`Reset ${dispDate(currentDate)}`); updateBacktestView(); updateReportView(); saveLocal();
+  });
+  $('#resetAllBtn')?.addEventListener('click', ()=>{
+    if(Object.keys(dailyData).length===0) return;
+    if(!confirm('Clear ALL data?')) return;
+    const snapshot = JSON.parse(JSON.stringify(dailyData));
+    pushUndo(()=>{ dailyData = snapshot; updateBacktestView(); updateReportView(); renderAllTrades(); saveLocal(); });
+    dailyData={}; showToast('All data cleared'); updateBacktestView(); updateReportView(); renderAllTrades(); saveLocal();
+  });
+
+  // Keyboard shortcuts
+  function isInputFocused(){ const a=document.activeElement; return a && (a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.isContentEditable); }
+  document.addEventListener('keydown', (e)=>{
+    if(isInputFocused()) return;
+    if(e.key==='ArrowLeft'){ e.preventDefault(); const dt=new Date(currentDate); dt.setDate(dt.getDate()-1); currentDate=dt.toISOString().slice(0,10); updateBacktestView(); saveLocal(); return; }
+    if(e.key==='ArrowRight'){ e.preventDefault(); const dt=new Date(currentDate); dt.setDate(dt.getDate()+1); currentDate=dt.toISOString().slice(0,10); updateBacktestView(); saveLocal(); return; }
+    if(e.key==='ArrowUp'){ e.preventDefault(); record('win'); return; }
+    if(e.key==='ArrowDown'){ e.preventDefault(); record('lose'); return; }
+    if(e.key==='1' || e.key==='2' || e.key==='3'){
+      const idx = parseInt(e.key,10)-1; const btn=document.querySelector(`[data-setup="${SETUPS[idx]}"]`);
+      if(btn){ document.querySelectorAll('[data-setup]').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); currentSetup=SETUPS[idx]; saveLocal(); }
+      return;
+    }
+    if(e.key==='s' || e.key==='S'){ e.preventDefault(); saveToFile(); return; }
+    if(e.key==='r' || e.key==='R'){ e.preventDefault(); const day = getDay(currentDate); if(day) $('#resetDayBtn').click(); return; }
+  });
+
+  // ===== Analytics Worker =====
+  function makeWorker(){
+    const src = `
+      let rngState = 123456789;
+      function setSeed(s){ rngState = (s>>>0) || 123456789; }
+      function rand(){ rngState ^= rngState << 13; rngState ^= rngState >>> 17; rngState ^= rngState << 5; return ((rngState>>>0) / 4294967296); }
+      function quantile(sorted, q){ if(sorted.length===0) return 0; const pos = (sorted.length-1)*q; const base = Math.floor(pos); const rest = pos-base; return sorted[base] + (sorted[base+1] - sorted[base] || 0)*rest; }
+      function wilson(wins, n, z=1.96){
+        if(n===0) return [0,0];
+        const p = wins/n; const denom = 1 + (z*z)/n;
+        const center = (p + (z*z)/(2*n)) / denom;
+        const margin = (z*Math.sqrt((p*(1-p))/n + (z*z)/(4*n*n))) / denom;
+        return [Math.max(0, center - margin), Math.min(1, center + margin)];
+      }
+      function blockBootstrapMeans(seq, n, resamples, blockSize){
+        const N = seq.length; if(N===0) return [];
+        const useBlocks = blockSize>1 && N>=blockSize; const out = new Float64Array(resamples);
+        for(let r=0; r<resamples; r++){
+          let total=0, k=0;
+          if(useBlocks){
+            while(k<n){
+              const start = Math.floor(rand()*N);
+              for(let b=0;b<blockSize && k<n;b++){ total += seq[(start+b)%N]; k++; }
+            }
+          }else{
+            for(k=0;k<n;k++){ total += seq[Math.floor(rand()*N)]; }
+          }
+          out[r] = total/n;
+        }
+        return out;
+      }
+      function mcSim(seq, horizon, sims, blockSize, postProgress){
+        const N = seq.length; const useBlocks = blockSize>1 && N>=blockSize;
+        const finals = new Float64Array(sims); const maxDDs = new Float64Array(sims);
+        const fan = Array.from({length:horizon}, ()=> new Float64Array(sims));
+        for(let s=0; s<sims; s++){
+          let eq=0, peak=0; let t=0;
+          if(useBlocks){
+            while(t<horizon){
+              const start = Math.floor(rand()*N);
+              for(let b=0;b<blockSize && t<horizon;b++){
+                eq += seq[(start+b)%N]; peak = Math.max(peak, eq);
+                const dd = peak - eq; if(dd>maxDDs[s]) maxDDs[s] = dd;
+                fan[t][s] = eq; t++;
+              }
+            }
+          }else{
+            for(t=0;t<horizon;t++){
+              eq += seq[Math.floor(rand()*N)]; peak = Math.max(peak, eq);
+              const dd = peak - eq; if(dd>maxDDs[s]) maxDDs[s] = dd;
+              fan[t][s] = eq;
+            }
+          }
+          finals[s] = eq; if(s % 200 === 0) postProgress(s+1, sims);
+        }
+        return {finals, maxDDs, fan};
+      }
+      self.onmessage = (e)=>{
+        const {type, payload} = e.data;
+        if(type==='run'){
+          const {seq, wins, trades, resamples, sims, horizon, block, seed} = payload;
+          if(seed!==undefined && seed!==null) { rngState = (seed>>>0) || 123456789; }
+          const post = (done,total)=> self.postMessage({type:'progress', done, total});
+          const bootMeans = blockBootstrapMeans(seq, trades, resamples, block);
+          const sortedBoot = Array.from(bootMeans).sort((a,b)=>a-b);
+          const expCI = [sortedBoot[Math.floor((sortedBoot.length-1)*0.025)] || 0, sortedBoot[Math.floor((sortedBoot.length-1)*0.975)] || 0];
+          const wil = wilson(wins, trades);
+          const mc = mcSim(seq, horizon, sims, block, post);
+          const finals = Array.from(mc.finals).sort((a,b)=>a-b);
+          const dds = Array.from(mc.maxDDs).sort((a,b)=>a-b);
+          const q5=[], q50=[], q95=[];
+          for(let t=0;t<horizon;t++){
+            const arr = Array.from(mc.fan[t]).sort((a,b)=>a-b);
+            q5.push(arr[Math.floor((arr.length-1)*0.05)] || 0);
+            q50.push(arr[Math.floor((arr.length-1)*0.50)] || 0);
+            q95.push(arr[Math.floor((arr.length-1)*0.95)] || 0);
+          }
+          const expMean = seq.length? (seq.reduce((a,b)=>a+b,0)/seq.length) : 0;
+          self.postMessage({type:'done', result:{ expMean, expCI, wil, finals, dds, q5, q50, q95 }});
+        }
+      };
+    `;
+    const blob = new Blob([src], {type:'application/javascript'});
+    const url = URL.createObjectURL(blob);
+    const w = new Worker(url); URL.revokeObjectURL(url);
+    return w;
+  }
+
+  function anaSetStatus(txt){ $('#anaStatus').textContent = txt || ''; }
+  function anaSetProgress(done,total){ const pct = total? Math.floor(done/total*100) : 0; $('#anaProg').style.width = pct+'%'; }
+  function quantileFromSorted(arr, q){
+    if(arr.length===0) return 0;
+    const pos = (arr.length-1)*q; const base = Math.floor(pos); const rest = pos-base;
+    return arr[base] + (arr[base+1]-arr[base]||0)*rest;
+  }
+
+  function runAnalytics(){
+    const useFilter = $('#anaUseFilter').checked;
+    const data = useFilter ? filteredData() : dailyData;
+
+    const outcomes = getTradeOutcomes(data);
+    const seq = buildTradeSequence(data);
+    const trades = outcomes.length;
+    if(trades<2){ alert('Need at least 2 trades to run analytics.'); return; }
+
+    const horizon = Math.max(1, parseInt($('#anaHorizon').value||trades,10));
+    const sims = Math.max(100, parseInt($('#anaSims').value||10000,10));
+    const resamples = Math.max(100, parseInt($('#anaBoot').value||10000,10));
+    const block = Math.max(1, parseInt($('#anaBlock').value||1,10));
+    const seed = $('#anaSeed').value==='' ? null : parseInt($('#anaSeed').value,10);
+
+    const keyObj = {useFilter, horizon, sims, resamples, block, seed, tradesHash: trades, wins: outcomes.filter(x=>x>0).length};
+    const key = JSON.stringify(keyObj);
+    if(anaCacheKey === key){ anaSetStatus('Using cached results (same params).'); return; }
+    anaCacheKey = key;
+
+    if(!anaWorker){
+      anaWorker = makeWorker();
+      anaWorker.onmessage = (e)=>{
+        const {type, result, done, total} = e.data;
+        if(type==='progress'){ anaSetProgress(done,total); return; }
+        if(type==='done'){
+          anaSetProgress(100,100);
+          renderAnalytics(result, trades, outcomes.filter(x=>x>0).length);
+          anaSetStatus('Done.');
+        }
+      };
+    }
+
+    $('#anaMeta').textContent = `nTrades=${trades}, horizon=${horizon}, sims=${sims}, resamples=${resamples}, block=${block}, seed=${seed ?? '—'}`;
+    anaSetStatus('Running…'); anaSetProgress(0,1);
+    anaWorker.postMessage({type:'run', payload:{ seq, wins: outcomes.filter(x=>x>0).length, trades, resamples, sims, horizon, block, seed }});
+  }
+
+  function renderAnalytics(res, trades, wins){
+    const mean = res.expMean;
+    const [lo,hi] = res.expCI;
+    $('#ciExp').textContent = `${fmt(mean,3)}  [${fmt(lo,3)}, ${fmt(hi,3)}]`;
+    const p = trades? (wins/trades) : 0;
+    const [wlo, whi] = res.wil;
+    $('#ciWR').textContent = `Win Rate: ${fmt(p*100,2)}%  [${fmt(wlo*100,2)}%, ${fmt(whi*100,2)}%]`;
+
+    if(anaBootChart){ anaBootChart.destroy(); }
+    anaBootChart = new Chart($('#bootChart'), {
+      type:'line',
+      data:{ labels: ['lo','q25','mean','q75','hi'], datasets:[{label:'Bootstrap', data:[lo,(lo+mean)/2,mean,(hi+mean)/2,hi], fill:false, borderWidth:2}] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}} }
+    });
+
+    if(mcFanChart) mcFanChart.destroy();
+    mcFanChart = new Chart($('#mcFan'), {
+      type:'line',
+      data:{
+        labels: Array.from({length: res.q50.length}, (_,i)=> i+1),
+        datasets:[
+          {label:'P95', data: res.q95, borderColor:'#9bd5ff', backgroundColor:'#9bd5ff33', fill:'+1', tension:.15},
+          {label:'P50', data: res.q50, borderColor:'#4ea1ff', backgroundColor:'#4ea1ff00', fill:false, tension:.15, borderWidth:2},
+          {label:'P05', data: res.q5, borderColor:'#9bd5ff', backgroundColor:'#9bd5ff33', fill:'-1', tension:.15}
+        ]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{labels:{color:'#cfd2e6'}}},
+        scales:{ x:{grid:{color:'#2b315d'}, title:{display:true, text:'Trade #', color:'#cfd2e6'}}, y:{grid:{color:'#2b315d'}, title:{display:true, text:'Cumulative R', color:'#cfd2e6'}}}
+      }
+    });
+
+    const finals = res.finals;
+    const fmin = finals[0], fmax = finals[finals.length-1];
+    const fBins = 30; const step = (fmax-fmin)/fBins || 1;
+    const centers = []; const counts = new Array(fBins).fill(0);
+    for(let i=0;i<fBins;i++){ centers.push(fmin + (i+0.5)*step); }
+    finals.forEach(v=>{ let idx = Math.floor((v - fmin)/step); idx = clamp(idx,0,fBins-1); counts[idx]++; });
+    if(mcFinalHistChart) mcFinalHistChart.destroy();
+    mcFinalHistChart = new Chart($('#mcFinalHist'), {
+      type:'bar', data:{ labels: centers.map(v=> fmt(v,0)), datasets:[{label:'Final R', data: counts}] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}} }
+    });
+
+    const dds = res.dds;
+    const dmin = dds[0], dmax = dds[dds.length-1];
+    const dBins = 30; const dStep = (dmax-dmin)/dBins || 1;
+    const dCenters = []; const dCounts = new Array(dBins).fill(0);
+    for(let i=0;i<dBins;i++){ dCenters.push(dmin + (i+0.5)*dStep); }
+    dds.forEach(v=>{ let idx = Math.floor((v - dmin)/dStep); idx = clamp(idx,0,dBins-1); dCounts[idx]++; });
+    if(mcDDHistChart) mcDDHistChart.destroy();
+    mcDDHistChart = new Chart($('#mcDDHist'), {
+      type:'bar', data:{ labels: dCenters.map(v=> fmt(v,0)), datasets:[{label:'Max DD (R)', data: dCounts}] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}} }
+    });
+
+    const meanFinal = finals.reduce((a,b)=>a+b,0)/finals.length;
+    const medFinal = quantileFromSorted(finals, 0.5);
+    const lo90 = quantileFromSorted(finals, 0.05);
+    const hi90 = quantileFromSorted(finals, 0.95);
+    const avgDD = dds.reduce((a,b)=>a+b,0)/dds.length;
+    const loDD = quantileFromSorted(dds, 0.05);
+    const hiDD = quantileFromSorted(dds, 0.95);
+    const negProb = finals.filter(v=>v<0).length / finals.length;
+
+    $('#mcMean').textContent = `${fmt(meanFinal,1)} R`;
+    $('#mcRange').textContent = `${fmt(lo90,1)} R  →  ${fmt(hi90,1)} R`;
+    $('#mcMedian').textContent = `${fmt(medFinal,1)} R`;
+    $('#mcAvgDD').textContent = `${fmt(avgDD,1)} R`;
+    $('#mcDDRange').textContent = `${fmt(loDD,1)} R  →  ${fmt(hiDD,1)} R`;
+    $('#mcNegProb').textContent = `${fmt(negProb*100,2)}%`;
+  }
+
+  // ===== Tabs =====
+  function switchTab(name){
+    ['backtest','alltrades','report','analytics'].forEach(id=>{
+      $(`#tabBtn-${id}`).classList.toggle('active', id===name);
+      $(`#tabBtn-${id}`).setAttribute('aria-selected', id===name ? 'true':'false');
+      $(`#tab-${id}`)?.classList.toggle('active', id===name);
+    });
+    $('#quickDock')?.classList.toggle('hidden', name!=='backtest');
+    if(name==='report') updateReportView();
+    if(name==='alltrades') renderAllTrades();
+  }
+  $('#tabBtn-backtest')?.addEventListener('click', ()=> switchTab('backtest'));
+  $('#tabBtn-alltrades')?.addEventListener('click', ()=> switchTab('alltrades'));
+  $('#tabBtn-report')?.addEventListener('click', ()=> switchTab('report'));
+  $('#tabBtn-analytics')?.addEventListener('click', ()=> switchTab('analytics'));
+
+  // ===== Boot =====
+  function boot(){
+    loadLocal();
+    migrateIfNeeded();
+    renderQuickTags();
+    wireScreenshot();
+    updateBacktestView();
+    updateReportView();
+    renderAllTrades();
+  }
+  document.addEventListener('DOMContentLoaded', boot);
+  </script>
+
+  <!-- Toasts -->
+  <div class="toast" id="toast"></div>
+</main>
+<script>
+// --- HOTFIX: wire Deep Analytics buttons (safe to paste near </body>) ---
+(() => {
+  const runBtn   = document.getElementById('anaRun');
+  const clearBtn = document.getElementById('anaClear');
+  if (!runBtn || !clearBtn) return; // if markup changed, fail safely
+
+  if (!runBtn.dataset.wired) {
+    runBtn.addEventListener('click', runAnalytics);
+    runBtn.dataset.wired = '1';
+  }
+
+  if (!clearBtn.dataset.wired) {
+    clearBtn.addEventListener('click', () => {
+      anaCacheKey = null;
+      // reset progress + status
+      document.getElementById('anaProg').style.width = '0%';
+      document.getElementById('anaStatus').textContent = '';
+      document.getElementById('anaMeta').textContent = '—';
+      // destroy charts if present
+      if (window.anaBootChart)    { anaBootChart.destroy();    anaBootChart = null; }
+      if (window.mcFanChart)      { mcFanChart.destroy();      mcFanChart = null; }
+      if (window.mcFinalHistChart){ mcFinalHistChart.destroy();mcFinalHistChart = null; }
+      if (window.mcDDHistChart)   { mcDDHistChart.destroy();   mcDDHistChart = null; }
+      // clear KPI text
+      document.getElementById('ciExp').textContent   = '—';
+      document.getElementById('ciWR').textContent    = '—';
+      document.getElementById('mcMean').textContent  = '—';
+      document.getElementById('mcRange').textContent = '—';
+      document.getElementById('mcMedian').textContent= '—';
+      document.getElementById('mcAvgDD').textContent = '—';
+      document.getElementById('mcDDRange').textContent='—';
+      document.getElementById('mcNegProb').textContent='—';
+    });
+    clearBtn.dataset.wired = '1';
+  }
+})();
+</script>
+<script>
+// === Tags Popover for Report ===
+
+// 1) Collect all unique tags from your saved data.
+//    We scan a few likely places so it works with your current structure.
+function getAllTags(){
+  const set=new Set();
+  const dd = window.dailyData || {};
+  for (const day of Object.values(dd)) {
+    if (Array.isArray(day._tags)) day._tags.forEach(t=>set.add(t));
+    if (Array.isArray(day._listings)) day._listings.forEach(x => (x.tags||[]).forEach(t=>set.add(t)));
+    for (const [k,v] of Object.entries(day)) {
+      if (['note','_events','screenshot','_tags','_listings'].includes(k)) continue;
+      (v && Array.isArray(v.tags) ? v.tags : []).forEach(t=>set.add(t));
+    }
+  }
+  return Array.from(set).sort((a,b)=>a.localeCompare(b));
+}
+
+// 2) Keep the hidden mirror elements in sync so your existing filter code keeps working.
+function rebuildMirrorSelect(selectEl, allTags, selected){
+  if (!selectEl) return;
+  selectEl.innerHTML = '';
+  allTags.forEach(t=>{
+    const opt = document.createElement('option');
+    opt.value = t;
+    opt.textContent = t;
+    if (selected.includes(t)) opt.selected = true;
+    selectEl.appendChild(opt);
+  });
+}
+
+// 3) Build and wire the popover to the button
+(function makeReportTagPopover(){
+  const btn = document.getElementById('reportTagsBtn');
+  if (!btn) return;
+
+  // Simple state object you can also read elsewhere if you want
+  window.reportTagState = window.reportTagState || { selected:[], matchAll:false };
+
+  const pop = document.createElement('div');
+  pop.className = 'tag-pop';
+  pop.innerHTML = `
+    <div class="panel" role="dialog" aria-label="Choose tags">
+      <div class="row">
+        <input type="search" placeholder="Search tags…" id="repTags-q">
+        <button class="btn soft" id="repTags-clear">Clear</button>
+      </div>
+      <div class="row" style="justify-content:space-between">
+        <label class="chk"><input type="checkbox" id="repTags-all"> Match all</label>
+        <button class="btn soft" id="repTags-close">Done</button>
+      </div>
+      <div id="repTags-list"></div>
+    </div>`;
+  document.body.appendChild(pop);
+
+  const mirrorSelect = document.getElementById('repTagsMulti');
+  const mirrorAll    = document.getElementById('repTagsAll');
+
+  function updateBadge(){
+    const n = reportTagState.selected.length;
+    const badge = btn.querySelector('.badge') || btn.appendChild(Object.assign(document.createElement('span'),{className:'badge'}));
+    badge.textContent = n ? n : 'Any';
+  }
+  function mirror(){
+    const allTags = getAllTags();
+    rebuildMirrorSelect(mirrorSelect, allTags, reportTagState.selected);
+    if (mirrorAll) mirrorAll.checked = !!reportTagState.matchAll;
+  }
+  function render(list, q=''){
+    const cont = document.getElementById('repTags-list');
+    cont.innerHTML = '';
+    list.forEach(t=>{
+      if (q && !t.toLowerCase().includes(q.toLowerCase())) return;
+      const row = document.createElement('label');
+      row.className='tag-item';
+      row.innerHTML = `<input type="checkbox" ${reportTagState.selected.includes(t)?'checked':''}> <span>${t}</span>`;
+      row.querySelector('input').onchange = (e)=>{
+        if (e.target.checked) {
+          if(!reportTagState.selected.includes(t)) reportTagState.selected.push(t);
+        } else {
+          reportTagState.selected = reportTagState.selected.filter(x=>x!==t);
+        }
+        updateBadge(); mirror();
+      };
+      cont.appendChild(row);
+    });
+  }
+  function open(){
+    const all = getAllTags();
+    const rect = btn.getBoundingClientRect();
+    const panel = pop.querySelector('.panel');
+    panel.style.top  = (rect.bottom + window.scrollY + 8) + 'px';
+    panel.style.left = (rect.left   + window.scrollX) + 'px';
+    pop.classList.add('show');
+
+    document.getElementById('repTags-q').value = '';
+    render(all);
+    document.getElementById('repTags-q').oninput = (e)=> render(all, e.target.value);
+
+    const allCb = document.getElementById('repTags-all');
+    allCb.checked = !!reportTagState.matchAll;
+    allCb.onchange = (e)=>{ reportTagState.matchAll = e.target.checked; mirror(); };
+
+    document.getElementById('repTags-clear').onclick = ()=>{
+      reportTagState.selected = []; render(all); updateBadge(); mirror();
+    };
+    document.getElementById('repTags-close').onclick = close;
+  }
+  function close(){ pop.classList.remove('show'); }
+
+  btn.addEventListener('click', ()=> pop.classList.contains('show') ? close() : open());
+  pop.addEventListener('click', (e)=> { if (e.target === pop) close(); });
+  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') close(); });
+
+  // Initial sync
+  updateBadge();
+  mirror();
+})();
+</script>
+<script>
+// ===== All Trades Tags Popover =====
+
+// Fallbacks (only used if you didn't paste these earlier for Report)
+if (typeof getAllTags !== 'function') {
+  function getAllTags(){
+    const set=new Set();
+    const dd = window.dailyData || {};
+    for (const day of Object.values(dd)) {
+      if (Array.isArray(day._tags)) day._tags.forEach(t=>set.add(t));
+      if (Array.isArray(day._listings)) day._listings.forEach(x => (x.tags||[]).forEach(t=>set.add(t)));
+      for (const [k,v] of Object.entries(day)) {
+        if (['note','_events','screenshot','_tags','_listings'].includes(k)) continue;
+        (v && Array.isArray(v.tags) ? v.tags : []).forEach(t=>set.add(t));
+      }
+    }
+    return Array.from(set).sort((a,b)=>a.localeCompare(b));
+  }
+}
+if (typeof rebuildMirrorSelect !== 'function') {
+  function rebuildMirrorSelect(selectEl, allTags, selected){
+    if (!selectEl) return;
+    if (selectEl.tagName === 'SELECT') {
+      selectEl.innerHTML = '';
+      allTags.forEach(t=>{
+        const opt = document.createElement('option');
+        opt.value = t; opt.textContent = t;
+        if (selected.includes(t)) opt.selected = true;
+        selectEl.appendChild(opt);
+      });
+    } else {
+      // If someone left a <textarea> as the mirror
+      selectEl.value = selected.join(', ');
+    }
+  }
+}
+
+(function makeAllTradesTagPopover(){
+  const btn = document.getElementById('allTradesTagsBtn');
+  if (!btn) return;
+
+  // Small state object you can read elsewhere if you like
+  window.allTradesTagState = window.allTradesTagState || { selected:[], matchAll:false };
+
+  // Build overlay + panel once
+  const pop = document.createElement('div');
+  pop.className = 'tag-pop';
+  pop.innerHTML = `
+    <div class="panel" role="dialog" aria-label="Choose tags">
+      <div class="row">
+        <input type="search" placeholder="Search tags…" id="atTags-q">
+        <button class="btn soft" id="atTags-clear">Clear</button>
+      </div>
+      <div class="row" style="justify-content:space-between">
+        <label class="chk"><input type="checkbox" id="atTags-all"> Match all</label>
+        <button class="btn soft" id="atTags-close">Done</button>
+      </div>
+      <div id="atTags-list"></div>
+    </div>`;
+  document.body.appendChild(pop);
+
+  // Hidden mirrors your existing Apply code already reads
+  const mirrorSelect = document.getElementById('atTagsMulti');
+  const mirrorAll    = document.getElementById('atTagsAll');
+
+  function updateBadge(){
+    const n = allTradesTagState.selected.length;
+    const badge = btn.querySelector('.badge') || btn.appendChild(Object.assign(document.createElement('span'),{className:'badge'}));
+    badge.textContent = n ? n : 'Any';
+  }
+  function mirror(){
+    const allTags = getAllTags();
+    rebuildMirrorSelect(mirrorSelect, allTags, allTradesTagState.selected);
+    if (mirrorAll) mirrorAll.checked = !!allTradesTagState.matchAll;
+  }
+  function render(list, q=''){
+    const cont = document.getElementById('atTags-list');
+    cont.innerHTML = '';
+    list.forEach(t=>{
+      if (q && !t.toLowerCase().includes(q.toLowerCase())) return;
+      const row = document.createElement('label');
+      row.className='tag-item';
+      row.innerHTML = `<input type="checkbox" ${allTradesTagState.selected.includes(t)?'checked':''}> <span>${t}</span>`;
+      row.querySelector('input').onchange = (e)=>{
+        if (e.target.checked) {
+          if(!allTradesTagState.selected.includes(t)) allTradesTagState.selected.push(t);
+        } else {
+          allTradesTagState.selected = allTradesTagState.selected.filter(x=>x!==t);
+        }
+        updateBadge(); mirror();
+      };
+      cont.appendChild(row);
+    });
+  }
+  function open(){
+    const all = getAllTags();
+    const rect = btn.getBoundingClientRect();
+    const panel = pop.querySelector('.panel');
+    panel.style.top  = (rect.bottom + window.scrollY + 8) + 'px';
+    panel.style.left = (rect.left   + window.scrollX) + 'px';
+    pop.classList.add('show');
+
+    document.getElementById('atTags-q').value = '';
+    render(all);
+    document.getElementById('atTags-q').oninput = (e)=> render(all, e.target.value);
+
+    const allCb = document.getElementById('atTags-all');
+    allCb.checked = !!allTradesTagState.matchAll;
+    allCb.onchange = (e)=>{ allTradesTagState.matchAll = e.target.checked; mirror(); };
+
+    document.getElementById('atTags-clear').onclick = ()=>{
+      allTradesTagState.selected = []; render(all); updateBadge(); mirror();
+    };
+    document.getElementById('atTags-close').onclick = close;
+  }
+  function close(){ pop.classList.remove('show'); }
+
+  btn.addEventListener('click', ()=> pop.classList.contains('show') ? close() : open());
+  pop.addEventListener('click', (e)=> { if (e.target === pop) close(); });
+  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') close(); });
+
+  // Initial sync so Apply can read immediately
+  updateBadge();
+  mirror();
+
+  // Optional: auto-refresh All Trades table when the popover closes
+  // if (typeof renderAllTrades === 'function') {
+  //   pop.querySelector('#atTags-close').addEventListener('click', renderAllTrades);
+  // }
+})();
+</script>
+
+</body>
+</html>

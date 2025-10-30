@@ -1,0 +1,2097 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: white;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        /* Tab Navigation */
+        .tab-navigation {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 5px;
+            margin-bottom: 25px;
+            backdrop-filter: blur(10px);
+            display: flex;
+            gap: 5px;
+        }
+        
+        .tab-btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            background: transparent;
+            color: rgba(255,255,255,0.7);
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .tab-btn:hover {
+            background: rgba(255,255,255,0.05);
+        }
+        
+        .tab-btn.active {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Backtest Tab Styles */
+        .date-container {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 25px;
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .date-nav-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .date-nav-btn:active {
+            transform: scale(0.9);
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .date-input {
+            background: transparent;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            text-align: center;
+            min-width: 150px;
+        }
+        
+        .date-input::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
+        }
+        
+        .setup-container {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 25px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .setup-label {
+            text-align: center;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: rgba(255,255,255,0.9);
+        }
+        
+        .setup-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .setup-btn {
+            flex: 1;
+            padding: 15px 10px;
+            border: 2px solid rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .setup-btn.active {
+            background: rgba(255,255,255,0.3);
+            border-color: rgba(255,255,255,0.6);
+            transform: scale(0.98);
+        }
+        
+        .setup-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .buttons-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 40px;
+        }
+        
+        .btn {
+            flex: 1;
+            padding: 25px 20px;
+            border: none;
+            border-radius: 15px;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .btn:active {
+            transform: scale(0.95);
+        }
+        
+        .win-btn {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+        }
+        
+        .lose-btn {
+            background: linear-gradient(135deg, #f44336, #d32f2f);
+            color: white;
+        }
+        
+        .stats-container {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .stats-row:last-child {
+            margin-bottom: 0;
+        }
+        
+        .stats-label {
+            font-weight: 500;
+        }
+        
+        .stats-value {
+            font-weight: bold;
+            font-size: 20px;
+        }
+        
+        .positive {
+            color: #4CAF50;
+        }
+        
+        .negative {
+            color: #f44336;
+        }
+        
+        .neutral {
+            color: #FFC107;
+        }
+        
+        .reset-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.3);
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 15px;
+        }
+        
+        .reset-btn:active {
+            transform: scale(0.95);
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .export-btn {
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);
+        }
+        
+        .export-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .file-controls {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .file-controls-title {
+            text-align: center;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: white;
+        }
+        
+        .file-input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            align-items: center;
+        }
+        
+        .file-name-input {
+            flex: 1;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 8px;
+            padding: 10px 12px;
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .file-name-input::placeholder {
+            color: rgba(255,255,255,0.6);
+        }
+        
+        .file-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.3);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .file-btn:active {
+            transform: scale(0.95);
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .file-btn.save {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            border-color: #4CAF50;
+        }
+        
+        .file-btn.load {
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+            border-color: #2196F3;
+        }
+        
+        .file-btn.reset-all {
+            background: linear-gradient(135deg, #f44336, #d32f2f);
+            border-color: #f44336;
+        }
+        
+        .hidden-file-input {
+            display: none;
+        }
+        
+        .current-file {
+            text-align: center;
+            font-size: 12px;
+            color: rgba(255,255,255,0.7);
+            margin-top: 10px;
+        }
+        
+        .footer {
+            text-align: center;
+        }
+        
+        .data-table-container {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            overflow-x: auto;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            color: white;
+            font-size: 12px;
+            min-width: 600px;
+        }
+        
+        .data-table th,
+        .data-table td {
+            padding: 8px 6px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .data-table th {
+            background: rgba(255,255,255,0.1);
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .data-table tr:hover {
+            background: rgba(255,255,255,0.05);
+        }
+        
+        .data-table .summary-row {
+            background: rgba(255,255,255,0.15);
+            font-weight: bold;
+            border-top: 2px solid rgba(255,255,255,0.4);
+        }
+        
+        .table-title {
+            text-align: center;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: white;
+        }
+        
+        .delete-btn {
+            background: none;
+            border: none;
+            color: #f44336;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .delete-btn:hover {
+            background: rgba(244, 67, 54, 0.1);
+            transform: scale(1.1);
+        }
+        
+        .delete-btn:active {
+            transform: scale(0.9);
+        }
+        
+        /* Report Tab Styles */
+        .report-section {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .report-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            text-align: center;
+            color: white;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 400px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 20px;
+        }
+        
+        .no-data-message {
+            text-align: center;
+            color: rgba(255,255,255,0.6);
+            padding: 40px;
+            font-size: 16px;
+        }
+        
+        .equity-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .equity-stat {
+            background: rgba(255,255,255,0.05);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .equity-stat-label {
+            font-size: 12px;
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+        
+        .equity-stat-value {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        /* Date Range Filter Styles */
+        .date-range-filter {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 25px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .date-range-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            text-align: center;
+            color: white;
+        }
+        
+        .date-range-inputs {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .date-range-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .date-range-label {
+            font-size: 14px;
+            color: rgba(255,255,255,0.8);
+        }
+        
+        .date-range-input {
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .date-range-input::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
+        }
+        
+        .apply-filter-btn {
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .apply-filter-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+        }
+        
+        .apply-filter-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .clear-filter-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.3);
+            padding: 10px 25px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .clear-filter-btn:hover {
+            background: rgba(255,255,255,0.25);
+        }
+        
+        .clear-filter-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .filter-info {
+            text-align: center;
+            font-size: 12px;
+            color: rgba(255,255,255,0.6);
+            margin-top: 10px;
+        }
+        
+        /* Setup Performance Styles */
+        .setup-charts-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            padding: 20px;
+        }
+        
+        .setup-chart-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .setup-chart-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: white;
+        }
+        
+        .donut-chart-container {
+            position: relative;
+            height: 200px;
+            margin-bottom: 10px;
+        }
+        
+        .setup-stats {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .setup-stat {
+            text-align: center;
+        }
+        
+        .setup-stat-label {
+            font-size: 11px;
+            color: rgba(255,255,255,0.6);
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+        
+        .setup-stat-value {
+            font-size: 16px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Trading Backtest Tracker</h1>
+        <p>Win: +2R | Lose: -1R</p>
+    </div>
+    
+    <!-- Tab Navigation -->
+    <div class="tab-navigation">
+        <button class="tab-btn active" onclick="switchTab('backtest')">📊 Backtest</button>
+        <button class="tab-btn" onclick="switchTab('report')">📈 Report</button>
+    </div>
+    
+    <!-- Backtest Tab Content -->
+    <div id="backtest-tab" class="tab-content active">
+        <div class="date-container">
+            <button class="date-nav-btn" onclick="changeDate(-1)">‹</button>
+            <input type="date" id="dateInput" class="date-input" onchange="loadDateData()">
+            <button class="date-nav-btn" onclick="changeDate(1)">›</button>
+        </div>
+        
+        <div class="setup-container">
+            <div class="setup-label">Select Setup</div>
+            <div class="setup-buttons">
+                <button class="setup-btn active" id="breakout" onclick="selectSetup('Breakout')">Breakout</button>
+                <button class="setup-btn" id="reversal" onclick="selectSetup('Reversal')">Reversal</button>
+                <button class="setup-btn" id="engulfing" onclick="selectSetup('Engulfing')">Engulfing</button>
+            </div>
+        </div>
+        
+        <div class="buttons-container">
+            <button class="btn win-btn" onclick="recordWin()">WIN</button>
+            <button class="btn lose-btn" onclick="recordLose()">LOSE</button>
+        </div>
+        
+        <div class="stats-container">
+            <div class="stats-row">
+                <span class="stats-label">Wins:</span>
+                <span class="stats-value" id="wins">0</span>
+            </div>
+            <div class="stats-row">
+                <span class="stats-label">Losses:</span>
+                <span class="stats-value" id="losses">0</span>
+            </div>
+            <div class="stats-row">
+                <span class="stats-label">Total Trades:</span>
+                <span class="stats-value" id="total">0</span>
+            </div>
+            <div class="stats-row">
+                <span class="stats-label">Win Rate:</span>
+                <span class="stats-value" id="winRate">0%</span>
+            </div>
+            <div class="stats-row">
+                <span class="stats-label">Total R:</span>
+                <span class="stats-value" id="totalR">0.0R</span>
+            </div>
+            <div class="stats-row">
+                <span class="stats-label">Expectancy:</span>
+                <span class="stats-value" id="expectancy">0.0R</span>
+            </div>
+        </div>
+        
+        <div class="file-controls">
+            <div class="file-controls-title">File Management</div>
+            <div class="file-input-group">
+                <input type="text" id="fileNameInput" class="file-name-input" placeholder="Enter backtest name..." maxlength="50">
+                <button class="file-btn save" onclick="saveToFile()">Save</button>
+            </div>
+            <div class="file-input-group">
+                <input type="file" id="loadFileInput" class="hidden-file-input" accept=".json" onchange="loadFromFile(event)">
+                <button class="file-btn load" onclick="document.getElementById('loadFileInput').click()">Load File</button>
+                <button class="file-btn reset-all" onclick="resetAllData()">Reset All</button>
+            </div>
+            <div class="current-file" id="currentFileName">No file loaded</div>
+        </div>
+        
+        <div class="data-table-container">
+            <div class="table-title">Trading Results Summary</div>
+            <div style="overflow-x: auto;">
+                <table class="data-table" id="dataTable">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Setup</th>
+                            <th>Wins</th>
+                            <th>Losses</th>
+                            <th>Total</th>
+                            <th>Win Rate</th>
+                            <th>Total R</th>
+                            <th>Expectancy</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dataTableBody">
+                        <tr>
+                            <td colspan="9" style="text-align: center; color: rgba(255,255,255,0.6);">No data recorded yet</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <button class="reset-btn" onclick="resetStats()">Reset Current Date</button>
+            <button class="export-btn" onclick="exportToCSV()">Export to CSV</button>
+        </div>
+    </div>
+    
+    <!-- Report Tab Content -->
+    <div id="report-tab" class="tab-content">
+        <div class="date-range-filter">
+            <div class="date-range-title">📅 Date Range Filter</div>
+            <div class="date-range-inputs">
+                <div class="date-range-group">
+                    <label class="date-range-label">From:</label>
+                    <input type="date" id="startDateFilter" class="date-range-input">
+                </div>
+                <div class="date-range-group">
+                    <label class="date-range-label">To:</label>
+                    <input type="date" id="endDateFilter" class="date-range-input">
+                </div>
+                <button class="apply-filter-btn" onclick="applyDateFilter()">Apply Filter</button>
+                <button class="clear-filter-btn" onclick="clearDateFilter()">Clear</button>
+            </div>
+            <div class="filter-info" id="filterInfo">Showing all data</div>
+        </div>
+        
+        <div class="date-range-filter">
+            <div class="date-range-title">💵 R Value Settings</div>
+            <div class="date-range-inputs">
+                <div class="date-range-group">
+                    <label class="date-range-label">1R = $</label>
+                    <input type="number" id="rDollarInput" class="date-range-input" min="0" step="0.01" placeholder="Enter dollar value">
+                </div>
+                <button class="apply-filter-btn" onclick="applyRValue()">Apply</button>
+                <button class="clear-filter-btn" onclick="clearRValue()">Reset to R</button>
+            </div>
+            <div class="filter-info" id="rValueInfo">Using R units</div>
+        </div>
+        
+        <div class="report-section">
+            <div class="report-title">Summary</div>
+            <div class="equity-info">
+                <div class="equity-stat">
+                    <div class="equity-stat-label">Total Trades</div>
+                    <div class="equity-stat-value" id="totalTrades">0</div>
+                </div>
+                <div class="equity-stat">
+                    <div class="equity-stat-label">Net Profit</div>
+                    <div class="equity-stat-value" id="netR">0R</div>
+                </div>
+                <div class="equity-stat">
+                    <div class="equity-stat-label">Win Rate</div>
+                    <div class="equity-stat-value" id="overallWinRate">0%</div>
+                </div>
+                <div class="equity-stat">
+                    <div class="equity-stat-label">Expectancy</div>
+                    <div class="equity-stat-value" id="overallExpectancy">0R</div>
+                </div>
+                <div class="equity-stat">
+                    <div class="equity-stat-label">Max Drawdown</div>
+                    <div class="equity-stat-value negative" id="overallMaxDrawdown">0R</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="report-section">
+            <div class="report-title"> Equity Curve</div>
+            <div class="tab-navigation" id="granularity-nav" style="margin-bottom: 20px;">
+                <button class="tab-btn active" onclick="setGranularity('daily')">Daily</button>
+                <button class="tab-btn" onclick="setGranularity('weekly')">Weekly</button>
+                <button class="tab-btn" onclick="setGranularity('monthly')">Monthly</button>
+            </div>
+            <div class="chart-container">
+                <canvas id="equityChart"></canvas>
+            </div>
+            <div class="equity-info">
+                <div class="equity-stat">
+                    <div class="equity-stat-label">Starting Equity</div>
+                    <div class="equity-stat-value" id="startEquity">0R</div>
+                </div>
+                <div class="equity-stat">
+                    <div class="equity-stat-label">Current Equity</div>
+                    <div class="equity-stat-value" id="currentEquity">0R</div>
+                </div>
+                <div class="equity-stat">
+                    <div class="equity-stat-label">Peak Equity</div>
+                    <div class="equity-stat-value positive" id="peakEquity">0R</div>
+                </div>
+                <div class="equity-stat">
+                    <div class="equity-stat-label">Max Drawdown</div>
+                    <div class="equity-stat-value negative" id="maxDrawdown">0R</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="report-section">
+            <div class="report-title">Setup Performance</div>
+            <div class="setup-charts-container" id="setupChartsContainer">
+                <!-- Setup charts will be dynamically inserted here -->
+            </div>
+        </div>
+        
+        <div class="report-section">
+            <div class="report-title">Daily Performance</div>
+            <div class="equity-info">
+                <div class="equity-stat">
+                    <div class="equity-stat-label">Winning Days</div>
+                    <div class="equity-stat-value positive" id="winningDays">0 (0%)</div>
+                </div>
+                <div class="equity-stat">
+                    <div class="equity-stat-label">Losing Days</div>
+                    <div class="equity-stat-value negative" id="losingDays">0 (0%)</div>
+                </div>
+                <div class="equity-stat">
+                    <div class="equity-stat-label">Breakeven Days</div>
+                    <div class="equity-stat-value neutral" id="breakevenDays">0 (0%)</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="report-section">
+            <div class="report-title">Periodic Average R</div>
+            <div class="equity-info">
+                <div class="equity-stat">
+                    <div class="equity-stat-label">Daily Average</div>
+                    <div class="equity-stat-value" id="dailyAvg">0R</div>
+                </div>
+                <div class="equity-stat">
+                    <div class="equity-stat-label">Weekly Average</div>
+                    <div class="equity-stat-value" id="weeklyAvg">0R</div>
+                </div>
+                <div class="equity-stat">
+                    <div class="equity-stat-label">Monthly Average</div>
+                    <div class="equity-stat-value" id="monthlyAvg">0R</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="report-section">
+            <div class="report-title">Losing Streak Frequency</div>
+            <div class="data-table-container">
+                <table class="data-table" id="streakTable">
+                    <thead>
+                        <tr>
+                            <th>Losing Streak</th>
+                            <th>Count</th>
+                        </tr>
+                    </thead>
+                    <tbody id="streakTableBody">
+                        <tr>
+                            <td colspan="2" style="text-align: center; color: rgba(255,255,255,0.6);">No data available</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="report-section">
+            <div class="report-title">Monthly Performance</div>
+            <div class="data-table-container">
+                <table class="data-table" id="monthlyTable">
+                    <thead>
+                        <tr>
+                            <th>Month</th>
+                            <th>Total Trades</th>
+                            <th>Net Profit</th>
+                            <th>Win Rate</th>
+                            <th>Expectancy</th>
+                            <th>Max Drawdown</th>
+                        </tr>
+                    </thead>
+                    <tbody id="monthlyTableBody">
+                        <tr>
+                            <td colspan="6" style="text-align: center; color: rgba(255,255,255,0.6);">No data available</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    
+    <script>
+        let currentDate = new Date().toISOString().split('T')[0];
+        let currentSetup = 'Breakout';
+        let dailyData = {}; // Store data: {date: {setup: {wins: 0, losses: 0}}}
+        let currentFileName = null;
+        let equityChart = null;
+        let setupCharts = {}; // Store setup donut charts
+        let reportStartDate = null;
+        let reportEndDate = null;
+        let rValue = 1;
+        let unit = 'R';
+        let granularity = 'daily';
+        
+        // Initialize
+        function init() {
+            document.getElementById('dateInput').value = currentDate;
+            loadDateData();
+            updateDataTable();
+            updateCurrentFileDisplay();
+            initializeChart();
+        }
+        
+        // Tab switching
+        function switchTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab-navigation .tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+            
+            // Update charts when switching to report tab
+            if (tabName === 'report') {
+                updateAllReports();
+            }
+        }
+        
+        // Initialize Chart
+        function initializeChart() {
+            const ctx = document.getElementById('equityChart');
+            if (!ctx) return;
+            
+            equityChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Cumulative Equity',
+                        data: [],
+                        borderColor: 'rgba(76, 175, 80, 1)',
+                        backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.1,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: {
+                                color: 'white',
+                                font: {
+                                    size: 14,
+                                    weight: '600'
+                                }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: 'white',
+                            bodyColor: 'white',
+                            borderColor: 'rgba(255, 255, 255, 0.2)',
+                            borderWidth: 1,
+                            displayColors: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return `Equity: ${context.parsed.y.toFixed(1)} ${unit}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)',
+                                borderColor: 'rgba(255, 255, 255, 0.2)'
+                            },
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.7)',
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)',
+                                borderColor: 'rgba(255, 255, 255, 0.2)'
+                            },
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.7)',
+                                callback: function(value) {
+                                    return value.toFixed(1) + unit;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Apply Date Filter
+        function applyDateFilter() {
+            const startDate = document.getElementById('startDateFilter').value;
+            const endDate = document.getElementById('endDateFilter').value;
+            
+            if (!startDate || !endDate) {
+                alert('Please select both start and end dates');
+                return;
+            }
+            
+            if (startDate > endDate) {
+                alert('Start date must be before end date');
+                return;
+            }
+            
+            reportStartDate = startDate;
+            reportEndDate = endDate;
+            
+            // Update filter info
+            const filterInfo = document.getElementById('filterInfo');
+            filterInfo.textContent = `Showing data from ${startDate} to ${endDate}`;
+            filterInfo.style.color = 'rgba(76, 175, 80, 0.8)';
+            
+            // Update all charts with filtered data
+            updateAllReports();
+        }
+        
+        // Clear Date Filter
+        function clearDateFilter() {
+            reportStartDate = null;
+            reportEndDate = null;
+            
+            // Clear input fields
+            document.getElementById('startDateFilter').value = '';
+            document.getElementById('endDateFilter').value = '';
+            
+            // Update filter info
+            const filterInfo = document.getElementById('filterInfo');
+            filterInfo.textContent = 'Showing all data';
+            filterInfo.style.color = 'rgba(255,255,255,0.6)';
+            
+            // Update all charts with all data
+            updateAllReports();
+        }
+        
+        // Apply R Value
+        function applyRValue() {
+            const input = document.getElementById('rDollarInput').value;
+            if (!input || parseFloat(input) <= 0) {
+                alert('Please enter a positive dollar value');
+                return;
+            }
+            rValue = parseFloat(input);
+            unit = '$';
+            document.getElementById('rValueInfo').textContent = `1R = $${rValue.toFixed(2)}`;
+            document.getElementById('rValueInfo').style.color = 'rgba(76, 175, 80, 0.8)';
+            updateAllReports();
+        }
+        
+        // Clear R Value
+        function clearRValue() {
+            rValue = 1;
+            unit = 'R';
+            document.getElementById('rDollarInput').value = '';
+            document.getElementById('rValueInfo').textContent = 'Using R units';
+            document.getElementById('rValueInfo').style.color = 'rgba(255,255,255,0.6)';
+            updateAllReports();
+        }
+        
+        // Set Granularity
+        function setGranularity(gran) {
+            granularity = gran;
+            document.querySelectorAll('#granularity-nav .tab-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.textContent.toLowerCase() === gran);
+            });
+            updateEquityChart();
+        }
+        
+        // Update All Reports
+        function updateAllReports() {
+            updateEquityChart();
+            updateSetupCharts();
+            updateSummary();
+            updateDailyPerformance();
+            updatePeriodicAverages();
+            updateLosingStreaks();
+            updateMonthlyPerformance();
+        }
+        
+        // Get filtered data based on date range
+        function getFilteredData() {
+            if (!reportStartDate || !reportEndDate) {
+                return dailyData;
+            }
+            
+            const filtered = {};
+            Object.keys(dailyData).forEach(date => {
+                if (date >= reportStartDate && date <= reportEndDate) {
+                    filtered[date] = dailyData[date];
+                }
+            });
+            
+            return filtered;
+        }
+        
+        // Update Summary
+        function updateSummary() {
+            const filteredData = getFilteredData();
+            const sortedDates = Object.keys(filteredData).sort();
+            
+            if (sortedDates.length === 0) {
+                document.getElementById('totalTrades').textContent = '0';
+                document.getElementById('netR').textContent = '0' + unit;
+                document.getElementById('overallWinRate').textContent = '0%';
+                document.getElementById('overallExpectancy').textContent = '0' + unit;
+                document.getElementById('overallMaxDrawdown').textContent = '0' + unit;
+                return;
+            }
+            
+            let totalWins = 0;
+            let totalLosses = 0;
+            let baseCumulative = 0;
+            let basePeak = 0;
+            let baseMaxDD = 0;
+            
+            sortedDates.forEach(date => {
+                let dailyR = 0;
+                Object.values(filteredData[date]).forEach(setupData => {
+                    totalWins += setupData.wins;
+                    totalLosses += setupData.losses;
+                    dailyR += (setupData.wins * 2) - setupData.losses;
+                });
+                baseCumulative += dailyR;
+                
+                if (baseCumulative > basePeak) {
+                    basePeak = baseCumulative;
+                }
+                const currentDD = basePeak - baseCumulative;
+                if (currentDD > baseMaxDD) {
+                    baseMaxDD = currentDD;
+                }
+            });
+            
+            const totalTrades = totalWins + totalLosses;
+            const baseNetR = (totalWins * 2) - totalLosses;
+            const winRate = totalTrades > 0 ? (totalWins / totalTrades * 100).toFixed(1) : 0;
+            const baseExpectancy = totalTrades > 0 ? (baseNetR / totalTrades) : 0;
+            
+            const displayNetR = (baseNetR * rValue).toFixed(2) + unit;
+            const displayExpectancy = (baseExpectancy * rValue).toFixed(2) + unit;
+            const displayMaxDD = (baseMaxDD * rValue).toFixed(2) + unit;
+            
+            document.getElementById('totalTrades').textContent = totalTrades;
+            document.getElementById('netR').textContent = displayNetR;
+            document.getElementById('overallWinRate').textContent = winRate + '%';
+            document.getElementById('overallExpectancy').textContent = displayExpectancy;
+            document.getElementById('overallMaxDrawdown').textContent = displayMaxDD;
+            
+            // Color coding
+            const netREl = document.getElementById('netR');
+            if (baseNetR > 0) {
+                netREl.className = 'equity-stat-value positive';
+            } else if (baseNetR < 0) {
+                netREl.className = 'equity-stat-value negative';
+            } else {
+                netREl.className = 'equity-stat-value neutral';
+            }
+            
+            const expectancyEl = document.getElementById('overallExpectancy');
+            if (baseExpectancy > 0) {
+                expectancyEl.className = 'equity-stat-value positive';
+            } else if (baseExpectancy < 0) {
+                expectancyEl.className = 'equity-stat-value negative';
+            } else {
+                expectancyEl.className = 'equity-stat-value neutral';
+            }
+        }
+        
+        // Update Setup Charts
+        function updateSetupCharts() {
+            // Get filtered data
+            const filteredData = getFilteredData();
+            
+            // Calculate stats for each setup
+            const setupStats = {};
+            const setups = ['Breakout', 'Reversal', 'Engulfing'];
+            
+            // Initialize stats for all setups
+            setups.forEach(setup => {
+                setupStats[setup] = { wins: 0, losses: 0 };
+            });
+            
+            // Aggregate data across filtered dates
+            Object.values(filteredData).forEach(dateData => {
+                Object.entries(dateData).forEach(([setup, data]) => {
+                    if (setupStats[setup]) {
+                        setupStats[setup].wins += data.wins;
+                        setupStats[setup].losses += data.losses;
+                    }
+                });
+            });
+            
+            // Clear existing charts container
+            const container = document.getElementById('setupChartsContainer');
+            container.innerHTML = '';
+            
+            // Check if there's any data
+            const hasData = Object.values(setupStats).some(stat => stat.wins > 0 || stat.losses > 0);
+            
+            if (!hasData) {
+                container.innerHTML = '<div class="no-data-message">No setup data available for the selected date range. Start recording trades to see performance analysis.</div>';
+                return;
+            }
+            
+            // Create a chart for each setup
+            setups.forEach((setup, index) => {
+                const stats = setupStats[setup];
+                const total = stats.wins + stats.losses;
+                
+                if (total === 0) {
+                    // Skip setups with no data
+                    return;
+                }
+                
+                const winRate = (stats.wins / total * 100).toFixed(1);
+                const baseTotalR = (stats.wins * 2) - stats.losses;
+                const baseExpectancy = (baseTotalR / total).toFixed(2);
+                const displayExpectancy = (baseExpectancy * rValue).toFixed(2) + unit;
+                
+                // Create card for this setup
+                const card = document.createElement('div');
+                card.className = 'setup-chart-card';
+                
+                card.innerHTML = `
+                    <div class="setup-chart-title">${setup}</div>
+                    <div class="donut-chart-container">
+                        <canvas id="setupChart${index}"></canvas>
+                    </div>
+                    <div class="setup-stats">
+                        <div class="setup-stat">
+                            <div class="setup-stat-label">Win Rate</div>
+                            <div class="setup-stat-value ${parseFloat(winRate) > 33.3 ? 'positive' : 'negative'}">${winRate}%</div>
+                        </div>
+                        <div class="setup-stat">
+                            <div class="setup-stat-label">Expectancy</div>
+                            <div class="setup-stat-value ${parseFloat(baseExpectancy) > 0 ? 'positive' : parseFloat(baseExpectancy) < 0 ? 'negative' : 'neutral'}">${displayExpectancy}</div>
+                        </div>
+                        <div class="setup-stat">
+                            <div class="setup-stat-label">Total Trades</div>
+                            <div class="setup-stat-value">${total}</div>
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(card);
+                
+                // Create donut chart
+                const ctx = document.getElementById(`setupChart${index}`);
+                const chart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Win', 'Lose'],
+                        datasets: [{
+                            data: [stats.wins, stats.losses],
+                            backgroundColor: [
+                                'rgba(76, 175, 80, 0.8)',
+                                'rgba(244, 67, 54, 0.8)'
+                            ],
+                            borderColor: [
+                                'rgba(76, 175, 80, 1)',
+                                'rgba(244, 67, 54, 1)'
+                            ],
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '60%',
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    color: 'white',
+                                    padding: 15,
+                                    font: {
+                                        size: 12
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                titleColor: 'white',
+                                bodyColor: 'white',
+                                borderColor: 'rgba(255, 255, 255, 0.2)',
+                                borderWidth: 1,
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.parsed || 0;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = ((value / total) * 100).toFixed(1);
+                                        return `${label}: ${value} (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    plugins: [{
+                        id: 'centerText',
+                        beforeDraw: function(chart) {
+                            const ctx = chart.ctx;
+                            const width = chart.width;
+                            const height = chart.height;
+                            
+                            ctx.restore();
+                            const fontSize = Math.min(width, height) / 8;
+                            ctx.font = `bold ${fontSize}px sans-serif`;
+                            ctx.textBaseline = "middle";
+                            ctx.textAlign = "center";
+                            ctx.fillStyle = 'white';
+                            
+                            const text = `${total}`;
+                            const textX = width / 2;
+                            const textY = height / 2 - 10;
+                            
+                            ctx.fillText(text, textX, textY);
+                            
+                            ctx.font = `${fontSize * 0.6}px sans-serif`;
+                            ctx.fillStyle = 'rgba(255,255,255,0.7)';
+                            ctx.fillText('Total', textX, textY + fontSize * 0.8);
+                            
+                            ctx.save();
+                        }
+                    }]
+                });
+                
+                setupCharts[setup] = chart;
+            });
+        }
+        
+        // Get ISO Week Number
+        function getISOWeek(dateStr) {
+            const date = new Date(dateStr);
+            const dayNum = date.getUTCDay() || 7;
+            date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+            const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+            return Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+        }
+        
+        function getWeek(dateStr) {
+            const date = new Date(dateStr);
+            const year = date.getFullYear();
+            const week = getISOWeek(dateStr);
+            return `${year}-W${week.toString().padStart(2, '0')}`;
+        }
+        
+        // Update Equity Chart
+        function updateEquityChart() {
+            if (!equityChart) {
+                initializeChart();
+            }
+            
+            // Get filtered data
+            const filteredData = getFilteredData();
+            const sortedDates = Object.keys(filteredData).sort();
+            
+            if (sortedDates.length === 0) {
+                // Reset chart if no data
+                equityChart.data.labels = [];
+                equityChart.data.datasets[0].data = [];
+                equityChart.options.plugins.legend.labels.text = 'Cumulative Equity';
+                equityChart.update();
+                
+                // Reset stats
+                document.getElementById('startEquity').textContent = '0' + unit;
+                document.getElementById('currentEquity').textContent = '0' + unit;
+                document.getElementById('peakEquity').textContent = '0' + unit;
+                document.getElementById('maxDrawdown').textContent = '0' + unit;
+                return;
+            }
+            
+            let baseCumulative = 0;
+            let basePeak = 0;
+            let baseMaxDD = 0;
+            let currentPeriod = null;
+            let periods = [];
+            let periodData = [];
+            let lastCum = 0;
+            
+            sortedDates.forEach(date => {
+                let dailyR = 0;
+                Object.values(filteredData[date]).forEach(setupData => {
+                    dailyR += (setupData.wins * 2) - setupData.losses;
+                });
+                baseCumulative += dailyR;
+                
+                // Track peak and drawdown on daily basis
+                if (baseCumulative > basePeak) {
+                    basePeak = baseCumulative;
+                }
+                const currentDD = basePeak - baseCumulative;
+                if (currentDD > baseMaxDD) {
+                    baseMaxDD = currentDD;
+                }
+                
+                // Determine period
+                let period;
+                if (granularity === 'monthly') {
+                    period = date.slice(0, 7);
+                } else if (granularity === 'weekly') {
+                    period = getWeek(date);
+                } else {
+                    period = date;
+                }
+                
+                // If period changes, push previous period's data
+                if (period !== currentPeriod) {
+                    if (currentPeriod !== null) {
+                        periods.push(currentPeriod);
+                        periodData.push(lastCum);
+                    }
+                    currentPeriod = period;
+                }
+                lastCum = baseCumulative;
+            });
+            
+            // Push the last period
+            if (currentPeriod !== null) {
+                periods.push(currentPeriod);
+                periodData.push(lastCum);
+            }
+            
+            const displayEquityData = periodData.map(v => v * rValue);
+            const displayCumulative = baseCumulative * rValue;
+            const displayPeak = basePeak * rValue;
+            const displayMaxDD = baseMaxDD * rValue;
+            
+            // Update chart
+            equityChart.data.labels = periods;
+            equityChart.data.datasets[0].data = displayEquityData;
+            
+            // Update line color based on performance
+            if (baseCumulative > 0) {
+                equityChart.data.datasets[0].borderColor = 'rgba(76, 175, 80, 1)';
+                equityChart.data.datasets[0].backgroundColor = 'rgba(76, 175, 80, 0.1)';
+            } else if (baseCumulative < 0) {
+                equityChart.data.datasets[0].borderColor = 'rgba(244, 67, 54, 1)';
+                equityChart.data.datasets[0].backgroundColor = 'rgba(244, 67, 54, 0.1)';
+            } else {
+                equityChart.data.datasets[0].borderColor = 'rgba(255, 193, 7, 1)';
+                equityChart.data.datasets[0].backgroundColor = 'rgba(255, 193, 7, 0.1)';
+            }
+            
+            equityChart.data.datasets[0].label = `Cumulative Equity (${unit})`;
+            equityChart.update();
+            
+            // Update stats
+            document.getElementById('startEquity').textContent = '0' + unit;
+            document.getElementById('currentEquity').textContent = displayCumulative.toFixed(2) + unit;
+            document.getElementById('peakEquity').textContent = displayPeak.toFixed(2) + unit;
+            document.getElementById('maxDrawdown').textContent = displayMaxDD.toFixed(2) + unit;
+            
+            // Color code current equity
+            const currentEquityEl = document.getElementById('currentEquity');
+            if (baseCumulative > 0) {
+                currentEquityEl.className = 'equity-stat-value positive';
+            } else if (baseCumulative < 0) {
+                currentEquityEl.className = 'equity-stat-value negative';
+            } else {
+                currentEquityEl.className = 'equity-stat-value neutral';
+            }
+        }
+        
+        // Update Daily Performance
+        function updateDailyPerformance() {
+            const filteredData = getFilteredData();
+            const sortedDates = Object.keys(filteredData).sort();
+            
+            if (sortedDates.length === 0) {
+                document.getElementById('winningDays').textContent = '0 (0%)';
+                document.getElementById('losingDays').textContent = '0 (0%)';
+                document.getElementById('breakevenDays').textContent = '0 (0%)';
+                return;
+            }
+            
+            let winning = 0, losing = 0, breakeven = 0;
+            
+            sortedDates.forEach(date => {
+                let dailyR = 0;
+                Object.values(filteredData[date]).forEach(setupData => {
+                    dailyR += (setupData.wins * 2) - setupData.losses;
+                });
+                
+                if (dailyR > 0) winning++;
+                else if (dailyR < 0) losing++;
+                else breakeven++;
+            });
+            
+            const totalDays = sortedDates.length;
+            const winPct = ((winning / totalDays) * 100).toFixed(1);
+            const losePct = ((losing / totalDays) * 100).toFixed(1);
+            const bePct = ((breakeven / totalDays) * 100).toFixed(1);
+            
+            document.getElementById('winningDays').textContent = `${winning} (${winPct}%)`;
+            document.getElementById('losingDays').textContent = `${losing} (${losePct}%)`;
+            document.getElementById('breakevenDays').textContent = `${breakeven} (${bePct}%)`;
+        }
+        
+        // Update Periodic Averages
+        function updatePeriodicAverages() {
+            const filteredData = getFilteredData();
+            const sortedDates = Object.keys(filteredData).sort();
+            
+            if (sortedDates.length === 0) {
+                document.getElementById('dailyAvg').textContent = '0' + unit;
+                document.getElementById('weeklyAvg').textContent = '0' + unit;
+                document.getElementById('monthlyAvg').textContent = '0' + unit;
+                return;
+            }
+            
+            let totalBaseR = 0;
+            let weeks = new Set();
+            let months = new Set();
+            
+            sortedDates.forEach(date => {
+                let dailyR = 0;
+                Object.values(filteredData[date]).forEach(setupData => {
+                    dailyR += (setupData.wins * 2) - setupData.losses;
+                });
+                totalBaseR += dailyR;
+                
+                weeks.add(getWeek(date));
+                months.add(date.slice(0, 7));
+            });
+            
+            const numDays = sortedDates.length;
+            const numWeeks = weeks.size;
+            const numMonths = months.size;
+            
+            const dailyAvg = numDays > 0 ? (totalBaseR / numDays) : 0;
+            const weeklyAvg = numWeeks > 0 ? (totalBaseR / numWeeks) : 0;
+            const monthlyAvg = numMonths > 0 ? (totalBaseR / numMonths) : 0;
+            
+            document.getElementById('dailyAvg').textContent = (dailyAvg * rValue).toFixed(2) + unit;
+            document.getElementById('weeklyAvg').textContent = (weeklyAvg * rValue).toFixed(2) + unit;
+            document.getElementById('monthlyAvg').textContent = (monthlyAvg * rValue).toFixed(2) + unit;
+            
+            // Color coding
+            [dailyAvg, weeklyAvg, monthlyAvg].forEach((avg, index) => {
+                const el = [document.getElementById('dailyAvg'), document.getElementById('weeklyAvg'), document.getElementById('monthlyAvg')][index];
+                if (avg > 0) {
+                    el.className = 'equity-stat-value positive';
+                } else if (avg < 0) {
+                    el.className = 'equity-stat-value negative';
+                } else {
+                    el.className = 'equity-stat-value neutral';
+                }
+            });
+        }
+        
+        // Update Losing Streaks
+        function updateLosingStreaks() {
+            const filteredData = getFilteredData();
+            const sortedDates = Object.keys(filteredData).sort();
+            
+            if (sortedDates.length === 0) {
+                document.getElementById('streakTableBody').innerHTML = '<tr><td colspan="2" style="text-align: center; color: rgba(255,255,255,0.6);">No data available</td></tr>';
+                return;
+            }
+            
+            let streakFreq = {};
+            let currentStreak = 0;
+            
+            sortedDates.forEach(date => {
+                let dailyR = 0;
+                Object.values(filteredData[date]).forEach(setupData => {
+                    dailyR += (setupData.wins * 2) - setupData.losses;
+                });
+                
+                if (dailyR < 0) {
+                    currentStreak++;
+                } else {
+                    if (currentStreak >= 2) {  // Only count streaks of 2 or more
+                        if (!streakFreq[currentStreak]) streakFreq[currentStreak] = 0;
+                        streakFreq[currentStreak]++;
+                    }
+                    currentStreak = 0;
+                }
+            });
+            
+            // Don't forget the last streak if it ends at the end
+            if (currentStreak >= 2) {
+                if (!streakFreq[currentStreak]) streakFreq[currentStreak] = 0;
+                streakFreq[currentStreak]++;
+            }
+            
+            const tbody = document.getElementById('streakTableBody');
+            tbody.innerHTML = '';
+            
+            if (Object.keys(streakFreq).length === 0) {
+                tbody.innerHTML = '<tr><td colspan="2" style="text-align: center; color: rgba(255,255,255,0.6);">No losing streaks of 2 or more days</td></tr>';
+                return;
+            }
+            
+            Object.keys(streakFreq).sort((a,b) => a - b).forEach(length => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${length}</td>
+                    <td>${streakFreq[length]}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        // Update Monthly Performance
+        function updateMonthlyPerformance() {
+            const filteredData = getFilteredData();
+            const sortedDates = Object.keys(filteredData).sort();
+            
+            if (sortedDates.length === 0) {
+                document.getElementById('monthlyTableBody').innerHTML = '<tr><td colspan="6" style="text-align: center; color: rgba(255,255,255,0.6);">No data available</td></tr>';
+                return;
+            }
+            
+            const monthlyData = {};
+            
+            sortedDates.forEach(date => {
+                const month = date.slice(0, 7); // YYYY-MM
+                if (!monthlyData[month]) {
+                    monthlyData[month] = {
+                        wins: 0,
+                        losses: 0,
+                        cumulative: 0,
+                        peak: 0,
+                        maxDD: 0
+                    };
+                }
+                
+                let dailyR = 0;
+                Object.values(filteredData[date]).forEach(setupData => {
+                    monthlyData[month].wins += setupData.wins;
+                    monthlyData[month].losses += setupData.losses;
+                    dailyR += (setupData.wins * 2) - setupData.losses;
+                });
+                
+                monthlyData[month].cumulative += dailyR;
+                
+                if (monthlyData[month].cumulative > monthlyData[month].peak) {
+                    monthlyData[month].peak = monthlyData[month].cumulative;
+                }
+                
+                const currentDD = monthlyData[month].peak - monthlyData[month].cumulative;
+                if (currentDD > monthlyData[month].maxDD) {
+                    monthlyData[month].maxDD = currentDD;
+                }
+            });
+            
+            const tbody = document.getElementById('monthlyTableBody');
+            tbody.innerHTML = '';
+            
+            Object.keys(monthlyData).sort().forEach(month => {
+                const data = monthlyData[month];
+                const totalTrades = data.wins + data.losses;
+                const baseNet = (data.wins * 2) - data.losses;
+                const winRate = totalTrades > 0 ? (data.wins / totalTrades * 100).toFixed(1) + '%' : '0%';
+                const baseExpectancy = totalTrades > 0 ? (baseNet / totalTrades).toFixed(2) : '0.00';
+                const displayNet = (baseNet * rValue).toFixed(2) + unit;
+                const displayExpectancy = (baseExpectancy * rValue).toFixed(2) + unit;
+                const displayMaxDD = (data.maxDD * rValue).toFixed(2) + unit;
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${month}</td>
+                    <td>${totalTrades}</td>
+                    <td class="${baseNet > 0 ? 'positive' : baseNet < 0 ? 'negative' : 'neutral'}">${displayNet}</td>
+                    <td>${winRate}</td>
+                    <td class="${parseFloat(baseExpectancy) > 0 ? 'positive' : parseFloat(baseExpectancy) < 0 ? 'negative' : 'neutral'}">${displayExpectancy}</td>
+                    <td class="negative">${displayMaxDD}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        function updateCurrentFileDisplay() {
+            const display = document.getElementById('currentFileName');
+            if (currentFileName) {
+                display.textContent = `Current file: ${currentFileName}`;
+                display.style.color = 'rgba(76, 175, 80, 0.8)';
+            } else {
+                display.textContent = 'No file loaded';
+                display.style.color = 'rgba(255,255,255,0.7)';
+            }
+        }
+        
+        function saveToFile() {
+            const fileName = document.getElementById('fileNameInput').value.trim();
+            if (!fileName) {
+                alert('Please enter a backtest name');
+                return;
+            }
+            
+            if (Object.keys(dailyData).length === 0) {
+                alert('No data to save!');
+                return;
+            }
+            
+            const saveData = {
+                fileName: fileName,
+                data: dailyData,
+                currentDate: currentDate,
+                savedAt: new Date().toISOString(),
+                version: '1.0'
+            };
+            
+            const jsonData = JSON.stringify(saveData, null, 2);
+            const blob = new Blob([jsonData], { type: 'application/json' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${fileName.replace(/[^a-z0-9]/gi, '_')}_backtest.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+            currentFileName = fileName;
+            updateCurrentFileDisplay();
+            alert(`Backtest saved as: ${fileName}`);
+        }
+        
+        function loadFromFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            if (file.type !== 'application/json') {
+                alert('Please select a valid JSON file');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const loadedData = JSON.parse(e.target.result);
+                    
+                    if (!loadedData.data || !loadedData.fileName) {
+                        alert('Invalid file format');
+                        return;
+                    }
+                    
+                    if (Object.keys(dailyData).length > 0) {
+                        if (!confirm('Loading this file will replace your current data. Continue?')) {
+                            return;
+                        }
+                    }
+                    
+                    dailyData = loadedData.data;
+                    currentFileName = loadedData.fileName;
+                    
+                    // Restore the saved date if available
+                    if (loadedData.currentDate) {
+                        currentDate = loadedData.currentDate;
+                        document.getElementById('dateInput').value = currentDate;
+                    }
+                    
+                    // Update file name input
+                    document.getElementById('fileNameInput').value = currentFileName;
+                    
+                    updateDisplay();
+                    updateDataTable();
+                    updateCurrentFileDisplay();
+                    updateAllReports();
+                    
+                    alert(`Backtest "${currentFileName}" loaded successfully!`);
+                    
+                } catch (error) {
+                    alert('Error reading file. Please check the file format.');
+                    console.error('File load error:', error);
+                }
+            };
+            
+            reader.readAsText(file);
+            // Reset the input so the same file can be loaded again
+            event.target.value = '';
+        }
+        
+        function resetAllData() {
+            if (Object.keys(dailyData).length === 0) {
+                alert('No data to reset!');
+                return;
+            }
+            
+            const resetMessage = currentFileName 
+                ? `Are you sure you want to delete ALL data for "${currentFileName}"? This cannot be undone.`
+                : 'Are you sure you want to delete ALL data? This cannot be undone.';
+                
+            if (confirm(resetMessage)) {
+                dailyData = {};
+                updateDisplay();
+                updateDataTable();
+                updateAllReports();
+                alert('All data has been reset');
+            }
+        }
+        
+        function selectSetup(setup) {
+            currentSetup = setup;
+            // Update button states
+            document.querySelectorAll('.setup-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(setup.toLowerCase()).classList.add('active');
+        }
+        
+        function recordWin() {
+            if (!dailyData[currentDate]) {
+                dailyData[currentDate] = {};
+            }
+            if (!dailyData[currentDate][currentSetup]) {
+                dailyData[currentDate][currentSetup] = {wins: 0, losses: 0};
+            }
+            dailyData[currentDate][currentSetup].wins++;
+            updateDisplay();
+            updateDataTable();
+            updateAllReports();
+        }
+        
+        function recordLose() {
+            if (!dailyData[currentDate]) {
+                dailyData[currentDate] = {};
+            }
+            if (!dailyData[currentDate][currentSetup]) {
+                dailyData[currentDate][currentSetup] = {wins: 0, losses: 0};
+            }
+            dailyData[currentDate][currentSetup].losses++;
+            updateDisplay();
+            updateDataTable();
+            updateAllReports();
+        }
+        
+        function changeDate(days) {
+            const date = new Date(currentDate);
+            date.setDate(date.getDate() + days);
+            currentDate = date.toISOString().split('T')[0];
+            document.getElementById('dateInput').value = currentDate;
+            loadDateData();
+        }
+        
+        function loadDateData() {
+            currentDate = document.getElementById('dateInput').value;
+            updateDisplay();
+        }
+        
+        function updateDisplay() {
+            // Aggregate all setups for the current date
+            let totalWins = 0;
+            let totalLosses = 0;
+            
+            if (dailyData[currentDate]) {
+                Object.values(dailyData[currentDate]).forEach(setupData => {
+                    totalWins += setupData.wins;
+                    totalLosses += setupData.losses;
+                });
+            }
+            
+            const total = totalWins + totalLosses;
+            const totalR = (totalWins * 2) - totalLosses;
+            const winRate = total > 0 ? (totalWins / total * 100) : 0;
+            const expectancy = total > 0 ? (totalR / total) : 0;
+            
+            document.getElementById('wins').textContent = totalWins;
+            document.getElementById('losses').textContent = totalLosses;
+            document.getElementById('total').textContent = total;
+            document.getElementById('winRate').textContent = winRate.toFixed(1) + '%';
+            document.getElementById('totalR').textContent = totalR.toFixed(1) + 'R';
+            document.getElementById('expectancy').textContent = expectancy.toFixed(2) + 'R';
+            
+            // Color coding for total R and expectancy
+            const totalRElement = document.getElementById('totalR');
+            const expectancyElement = document.getElementById('expectancy');
+            
+            if (totalR > 0) {
+                totalRElement.className = 'stats-value positive';
+            } else if (totalR < 0) {
+                totalRElement.className = 'stats-value negative';
+            } else {
+                totalRElement.className = 'stats-value neutral';
+            }
+            
+            if (expectancy > 0) {
+                expectancyElement.className = 'stats-value positive';
+            } else if (expectancy < 0) {
+                expectancyElement.className = 'stats-value negative';
+            } else {
+                expectancyElement.className = 'stats-value neutral';
+            }
+        }
+        
+        function updateDataTable() {
+            const tbody = document.getElementById('dataTableBody');
+            tbody.innerHTML = '';
+            
+            if (Object.keys(dailyData).length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: rgba(255,255,255,0.6);">No data recorded yet</td></tr>';
+                return;
+            }
+            
+            // Create rows for each date and setup combination
+            const sortedDates = Object.keys(dailyData).sort();
+            let allWins = 0, allLosses = 0;
+            
+            sortedDates.forEach(date => {
+                Object.keys(dailyData[date]).forEach(setup => {
+                    const data = dailyData[date][setup];
+                    const wins = data.wins;
+                    const losses = data.losses;
+                    const total = wins + losses;
+                    const totalR = (wins * 2) - losses;
+                    const winRate = total > 0 ? (wins / total * 100).toFixed(1) : '0.0';
+                    const expectancy = total > 0 ? (totalR / total).toFixed(2) : '0.00';
+                    
+                    allWins += wins;
+                    allLosses += losses;
+                    
+                    const row = tbody.insertRow();
+                    row.innerHTML = `
+                        <td>${date}</td>
+                        <td>${setup}</td>
+                        <td>${wins}</td>
+                        <td>${losses}</td>
+                        <td>${total}</td>
+                        <td>${winRate}%</td>
+                        <td>${totalR.toFixed(1)}R</td>
+                        <td>${expectancy}R</td>
+                        <td>
+                            <button class="delete-btn" onclick="deleteEntry('${date}', '${setup}')" title="Delete this entry">
+                                🗑️
+                            </button>
+                        </td>
+                    `;
+                });
+            });
+            
+            // Add summary row
+            if (allWins > 0 || allLosses > 0) {
+                const allTotal = allWins + allLosses;
+                const allTotalR = (allWins * 2) - allLosses;
+                const allWinRate = allTotal > 0 ? (allWins / allTotal * 100).toFixed(1) : '0.0';
+                const allExpectancy = allTotal > 0 ? (allTotalR / allTotal).toFixed(2) : '0.00';
+                
+                const summaryRow = tbody.insertRow();
+                summaryRow.className = 'summary-row';
+                summaryRow.innerHTML = `
+                    <td><strong>TOTAL</strong></td>
+                    <td><strong>ALL</strong></td>
+                    <td><strong>${allWins}</strong></td>
+                    <td><strong>${allLosses}</strong></td>
+                    <td><strong>${allTotal}</strong></td>
+                    <td><strong>${allWinRate}%</strong></td>
+                    <td><strong>${allTotalR.toFixed(1)}R</strong></td>
+                    <td><strong>${allExpectancy}R</strong></td>
+                    <td></td>
+                `;
+            }
+        }
+        
+        function deleteEntry(date, setup) {
+            if (confirm(`Are you sure you want to delete ${setup} data for ${date}?`)) {
+                if (dailyData[date] && dailyData[date][setup]) {
+                    delete dailyData[date][setup];
+                    
+                    // If no setups left for this date, remove the date entirely
+                    if (Object.keys(dailyData[date]).length === 0) {
+                        delete dailyData[date];
+                    }
+                    
+                    updateDisplay();
+                    updateDataTable();
+                    updateAllReports();
+                }
+            }
+        }
+        
+        function resetStats() {
+            if (confirm(`Are you sure you want to reset all data for ${currentDate}?`)) {
+                if (dailyData[currentDate]) {
+                    delete dailyData[currentDate];
+                }
+                updateDisplay();
+                updateDataTable();
+                updateAllReports();
+            }
+        }
+        
+        function exportToCSV() {
+            if (Object.keys(dailyData).length === 0) {
+                alert('No data to export!');
+                return;
+            }
+            
+            let csv = 'Date,Setup,Wins,Losses,Total Trades,Win Rate (%),Total R,Expectancy (R)\n';
+            
+            // Sort dates
+            const sortedDates = Object.keys(dailyData).sort();
+            let allWins = 0, allLosses = 0;
+            
+            sortedDates.forEach(date => {
+                Object.keys(dailyData[date]).forEach(setup => {
+                    const data = dailyData[date][setup];
+                    const wins = data.wins;
+                    const losses = data.losses;
+                    const total = wins + losses;
+                    const totalR = (wins * 2) - losses;
+                    const winRate = total > 0 ? (wins / total * 100).toFixed(1) : '0.0';
+                    const expectancy = total > 0 ? (totalR / total).toFixed(2) : '0.00';
+                    
+                    allWins += wins;
+                    allLosses += losses;
+                    
+                    csv += `${date},${setup},${wins},${losses},${total},${winRate},${totalR.toFixed(1)},${expectancy}\n`;
+                });
+            });
+            
+            // Add summary row
+            const allTotal = allWins + allLosses;
+            const allTotalR = (allWins * 2) - allLosses;
+            const allWinRate = allTotal > 0 ? (allWins / allTotal * 100).toFixed(1) : '0.0';
+            const allExpectancy = allTotal > 0 ? (allTotalR / allTotal).toFixed(2) : '0.00';
+            
+            csv += `\nTOTAL,ALL,${allWins},${allLosses},${allTotal},${allWinRate},${allTotalR.toFixed(1)},${allExpectancy}`;
+            
+            // Download CSV
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const csvFileName = currentFileName 
+                ? `${currentFileName.replace(/[^a-z0-9]/gi, '_')}_results.csv`
+                : `trading_backtest_results_${new Date().toISOString().split('T')[0]}.csv`;
+            a.download = csvFileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+        
+        init();
+    </script>
+</body>
+</html>

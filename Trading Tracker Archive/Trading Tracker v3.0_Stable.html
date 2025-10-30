@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  />
+  <title>Trading Tracker — Desktop</title>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <style>
+    :root{
+      --bg:#0f1222;
+      --bg-soft:#171a2d;
+      --card:#1d2140;
+      --card-2:#1a1e3a;
+      --text:#e7e9f0;
+      --muted:#9aa1c6;
+      --line:#2b315d;
+      --green:#35cc7a;
+      --red:#ff5a6b;
+      --amber:#ffc857;
+      --blue:#4ea1ff;
+      --shadow:0 10px 30px rgba(0,0,0,.35);
+      --radius:12px;
+      --gap:16px;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background:
+        radial-gradient(1200px 1200px at 80% -20%, #3f3cbb22 0%, transparent 60%),
+        radial-gradient(1200px 1200px at -10% 120%, #4ea1ff22 0%, transparent 60%),
+        var(--bg);
+      color:var(--text);
+      font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, system-ui, Avenir, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+      line-height:1.35;
+    }
+
+    /* ---------- Top App Bar (simplified) ---------- */
+    .appbar{
+      position:sticky; top:0; z-index:40;
+      backdrop-filter:saturate(120%) blur(12px);
+      background:rgba(15,18,34,.7);
+      border-bottom:1px solid var(--line);
+    }
+    .appbar-inner{
+      max-width:1200px; margin:0 auto; padding:12px 16px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;
+    }
+    .brand{font-weight:700; letter-spacing:.2px; font-size:18px; margin-right:auto; display:flex; align-items:center; gap:10px}
+    .brand small{color:var(--muted); font-weight:500}
+
+    .seg{
+      display:inline-flex; background:var(--card); border:1px solid var(--line); border-radius:999px; overflow:hidden;
+    }
+    .seg button{
+      padding:8px 14px; border:0; background:transparent; color:var(--muted); cursor:pointer; font-weight:700;
+    }
+    .seg button.active{background:var(--blue); color:white}
+
+    .btn{
+      border:0; background:var(--card-2); color:var(--text); padding:10px 14px; border-radius:10px; cursor:pointer; font-weight:700; box-shadow:var(--shadow);
+    }
+    .btn:active{transform:translateY(1px)}
+    .btn.blue{background:linear-gradient(180deg, #4ea1ff, #277ae3)}
+    .btn.soft{background:var(--card); border:1px solid var(--line); box-shadow:none; color:var(--muted); font-weight:600}
+
+    .toolbar{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+
+    .kbd{
+      padding:2px 6px; border:1px solid var(--line); border-bottom-width:2px; background:var(--bg-soft); border-radius:6px; color:var(--muted); font-size:12px
+    }
+
+    input, select{
+      background:var(--bg-soft); border:1px solid var(--line); color:var(--text); border-radius:8px; padding:8px 10px; outline:none;
+    }
+    input[type="date"], input[type="number"]{min-height:36px}
+    label{color:var(--muted); font-size:12px}
+
+    /* ---------- Page ---------- */
+    .shell{max-width:1200px; margin:0 auto; padding:18px 16px 80px}
+    .tabs{display:flex; gap:8px}
+    .tabs .tab-btn{padding:10px 14px; border-radius:10px; background:var(--card); border:1px solid var(--line); color:var(--muted); cursor:pointer; font-weight:700}
+    .tabs .tab-btn.active{background:var(--blue); color:#fff}
+    .tabcontent{display:none; margin-top:16px}
+    .tabcontent.active{display:block; animation:fade .25s ease}
+    @keyframes fade{from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:translateY(0)}}
+
+    .grid{display:grid; gap:var(--gap)}
+    .grid.cols-2{grid-template-columns:2fr 3fr}
+    .grid.cols-3{grid-template-columns:repeat(3,1fr)}
+    .grid.cols-4{grid-template-columns:repeat(4,1fr)}
+    @media (max-width:1100px){ .grid.cols-4{grid-template-columns:repeat(2,1fr)} }
+    @media (max-width:900px){ .grid.cols-2{grid-template-columns:1fr} .grid.cols-3{grid-template-columns:repeat(2,1fr)} }
+    @media (max-width:680px){ .grid.cols-3{grid-template-columns:1fr} }
+
+    .card{
+      background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:16px; box-shadow:var(--shadow)
+    }
+    .card h3{margin:0 0 12px 0; font-size:16px; letter-spacing:.2px}
+    .kpis{display:grid; grid-template-columns:repeat(5,1fr); gap:var(--gap)}
+    @media (max-width:1000px){ .kpis{grid-template-columns:repeat(2,1fr)} }
+    @media (max-width:600px){ .kpis{grid-template-columns:1fr} }
+    .kpi{background:var(--card-2); border:1px solid var(--line); border-radius:12px; padding:14px}
+    .kpi .label{color:var(--muted); font-size:12px; margin-bottom:6px}
+    .kpi .value{font-size:22px; font-weight:800}
+
+    table{width:100%; border-collapse:collapse}
+    th, td{padding:10px 8px; border-bottom:1px solid var(--line); text-align:left; font-size:14px}
+    thead th{color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.4px}
+    tbody tr:hover{background:rgba(255,255,255,.03)}
+
+    /* ---------- Quick Entry Dock (new, tight workflow) ---------- */
+    .quick-dock{
+      position:sticky; top:76px; z-index:35; /* sits right under the appbar */
+      background:linear-gradient(180deg, rgba(26,30,58,.9), rgba(26,30,58,.86));
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+      box-shadow:var(--shadow);
+      display:grid;
+      grid-template-columns: 1.2fr 1.6fr 1.2fr 1.2fr; /* date | setup | win | lose */
+      gap:10px;
+      align-items:center;
+    }
+    @media (max-width:980px){
+      .quick-dock{ grid-template-columns:1.2fr 1.6fr 1fr 1fr; }
+    }
+    @media (max-width:760px){
+      .quick-dock{ grid-template-columns:1fr; top:64px }
+    }
+    .dock-group{
+      display:flex; align-items:center; gap:8px; width:100%;
+      background:var(--bg-soft); border:1px solid var(--line); border-radius:10px; padding:8px;
+    }
+    .dock-group .seg{background:transparent; border:0}
+    .dock-group .seg button{min-width:92px}
+    .icon-btn{background:transparent; border:0; color:var(--muted); cursor:pointer; font-size:18px}
+    .icon-btn:hover{color:#fff}
+    .btn.big{
+      width:100%; padding:14px 16px; font-size:18px; font-weight:900; border-radius:12px;
+    }
+    .btn.green{background:linear-gradient(180deg, #27be69, #149a53)}
+    .btn.red{background:linear-gradient(180deg, #ff5a6b, #d93c4f)}
+    .hint{color:var(--muted); font-size:12px; margin-top:4px; text-align:center}
+
+    /* ---------- Chart box ---------- */
+    .chart-head{display:flex; align-items:center; gap:10px; margin-bottom:10px}
+    .spacer{flex:1}
+
+    /* ---------- Toast ---------- */
+    .toast{
+      position:fixed; right:16px; bottom:16px; display:flex; flex-direction:column; gap:10px; z-index:60;
+    }
+    .toast .t{
+      background:#14172a; border:1px solid var(--line); padding:12px 14px; border-radius:10px; box-shadow:var(--shadow); display:flex; gap:12px; align-items:center
+    }
+    .toast .t .undo{margin-left:auto; color:var(--blue); font-weight:700; cursor:pointer}
+
+    .muted{color:var(--muted)}
+    .sr{position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0}
+  </style>
+</head>
+
+<body>
+  <!-- ========== TOP BAR ========== -->
+  <header class="appbar" role="banner">
+    <div class="appbar-inner">
+      <div class="brand">
+        <span>📊 Trading Tracker</span>
+        <small id="fileBadge">Unsaved</small>
+      </div>
+
+      <!-- Tabs -->
+      <div class="seg" role="tablist" aria-label="Views">
+        <button class="active" id="tabBtn-backtest" role="tab" aria-selected="true" data-tab="backtest">Backtest</button>
+        <button id="tabBtn-report" role="tab" aria-selected="false" data-tab="report">Report</button>
+      </div>
+
+      <!-- Unit + File actions compact -->
+      <div class="toolbar" style="margin-left:auto">
+        <button class="btn soft" id="unitR">Unit: R</button>
+        <button class="btn soft" id="unitDollar">Unit: $</button>
+        <input type="number" id="rValue" placeholder="1R = $" step="0.01" min="0" style="width:120px" />
+        <button class="btn blue" id="saveBtn" title="Save JSON (S)">Save <span class="kbd">S</span></button>
+        <input class="sr" type="file" id="loadInput" accept=".json" />
+        <button class="btn soft" id="loadBtn">Load</button>
+        <button class="btn soft" id="exportBtn">Export CSV</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ========== MAIN ========== -->
+  <main class="shell">
+
+    <!-- QUICK ENTRY DOCK (tight: date → setup → win/lose) -->
+    <section class="quick-dock" aria-label="Quick Entry">
+      <!-- Date -->
+      <div>
+        <div class="dock-group" aria-label="Date control">
+          <button class="icon-btn" id="prevDay" title="Previous day (←)">⟨</button>
+          <input type="date" id="dateInput" aria-label="Selected date" style="flex:1" />
+          <button class="icon-btn" id="nextDay" title="Next day (→)">⟩</button>
+          <button class="btn soft" id="todayBtn" title="Jump to today">Today</button>
+        </div>
+        <div class="hint">Use ← / → to move days</div>
+      </div>
+
+      <!-- Setup -->
+      <div>
+        <div class="dock-group" aria-label="Setup">
+          <span class="muted" style="padding-left:6px">Setup</span>
+          <div class="seg" style="margin-left:6px">
+            <button class="active" data-setup="Breakout">Breakout</button>
+            <button data-setup="Reversal">Reversal</button>
+            <button data-setup="Engulfing">Engulfing</button>
+          </div>
+        </div>
+        <div class="hint">Press 1 / 2 / 3 to switch</div>
+      </div>
+
+      <!-- Win -->
+      <div>
+        <button class="btn big green" id="winBtn" title="Record Win (W)">Win <span class="kbd">W</span></button>
+        <div class="hint">Adds +2R to today</div>
+      </div>
+
+      <!-- Lose -->
+      <div>
+        <button class="btn big red" id="loseBtn" title="Record Lose (L)">Lose <span class="kbd">L</span></button>
+        <div class="hint">Adds -1R to today</div>
+      </div>
+    </section>
+
+    <!-- Tabs header (for a11y on small screens) -->
+    <div class="tabs" style="display:none">
+      <button class="tab-btn active">Backtest</button>
+      <button class="tab-btn">Report</button>
+    </div>
+
+    <!-- BACKTEST -->
+    <section id="tab-backtest" class="tabcontent active" role="tabpanel" aria-labelledby="tabBtn-backtest">
+      <div class="grid cols-2" style="margin-top:12px">
+        <!-- Left: Day stats -->
+        <div class="grid">
+          <div class="card">
+            <h3>Day Stats (<span id="dayLabel">—</span>)</h3>
+            <div class="grid cols-3" style="margin-top:10px">
+              <div class="kpi"><div class="label">Wins</div><div class="value" id="wins">0</div></div>
+              <div class="kpi"><div class="label">Losses</div><div class="value" id="losses">0</div></div>
+              <div class="kpi"><div class="label">Total</div><div class="value" id="total">0</div></div>
+              <div class="kpi"><div class="label">Win Rate</div><div class="value" id="winRate">0%</div></div>
+              <div class="kpi"><div class="label">Total R</div><div class="value" id="totalR">0.0R</div></div>
+              <div class="kpi"><div class="label">Expectancy</div><div class="value" id="expectancy">0.00R</div></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Quick Notes</h3>
+            <textarea id="dayNote" rows="5" placeholder="Optional: context for today's trades…" style="width:100%; background:var(--bg-soft); color:var(--text); border:1px solid var(--line); border-radius:10px; padding:10px; resize:vertical"></textarea>
+            <div style="display:flex; gap:8px; margin-top:10px">
+              <button class="btn soft" id="resetDayBtn" title="Reset current day (R)">Reset Day <span class="kbd">R</span></button>
+              <button class="btn soft" id="resetAllBtn">Reset All</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Today table -->
+        <div class="card">
+          <h3>Today Entries</h3>
+          <div style="overflow:auto; max-height:480px; margin-top:8px">
+            <table id="todayTable" aria-label="Today table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Setup</th>
+                  <th>Wins</th>
+                  <th>Losses</th>
+                  <th>Total</th>
+                  <th>Win %</th>
+                  <th>Total R</th>
+                  <th>Expectancy</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="todayTableBody">
+                <tr><td colspan="9" class="muted" style="text-align:center">No data for this day yet</td></tr>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td><strong>TOTAL</strong></td>
+                  <td>—</td>
+                  <td id="sumWins">0</td>
+                  <td id="sumLosses">0</td>
+                  <td id="sumTotal">0</td>
+                  <td id="sumWinRate">0%</td>
+                  <td id="sumR">0.0R</td>
+                  <td id="sumExp">0.00R</td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- REPORT -->
+    <section id="tab-report" class="tabcontent" role="tabpanel" aria-labelledby="tabBtn-report">
+      <!-- Filter bar -->
+      <div class="card" id="reportFilterBar">
+        <div class="grid cols-3">
+          <div>
+            <label for="startDate">From</label>
+            <input type="date" id="startDate" style="width:100%">
+          </div>
+          <div>
+            <label for="endDate">To</label>
+            <input type="date" id="endDate" style="width:100%">
+          </div>
+          <div style="display:flex; align-items:flex-end; gap:8px">
+            <button class="btn" id="applyRange">Apply</button>
+            <button class="btn soft" id="clearRangeBtn">Clear</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Summary</h3>
+        <div class="kpis" style="margin-top:10px">
+          <!-- First row -->
+          <div class="kpi"><div class="label">Total Trades</div><div class="value" id="kpiTrades">0</div></div>
+          <div class="kpi"><div class="label">Net Profit</div><div class="value" id="kpiNet">0R</div></div>
+          <div class="kpi"><div class="label">Win Rate</div><div class="value" id="kpiWR">0%</div></div>
+          <div class="kpi"><div class="label">Expectancy</div><div class="value" id="kpiExp">0R</div></div>
+          <div class="kpi"><div class="label">Max Drawdown</div><div class="value" id="kpiDD">0R</div></div>
+          <!-- Second row -->
+          <div class="kpi"><div class="label">Total Day Span</div><div class="value" id="kpiDaySpan">0</div></div>
+          <div class="kpi"><div class="label">Total Month Span</div><div class="value" id="kpiMonthSpan">0</div></div>
+          <div class="kpi"><div class="label">Total Quarter Span</div><div class="value" id="kpiQuarterSpan">0</div></div>
+          <div class="kpi"><div class="label">Total Year Span</div><div class="value" id="kpiYearSpan">0</div></div>
+          <div class="kpi"><div class="label">Avg Trades / Day</div><div class="value" id="kpiAvgPerDay">0.00</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="chart-head">
+          <h3 style="margin:0">Cumulative Equity</h3>
+          <div class="spacer"></div>
+          <div class="seg" id="granSeg" aria-label="Granularity">
+            <button class="active" data-gran="daily">Daily</button>
+            <button data-gran="weekly">Weekly</button>
+            <button data-gran="monthly">Monthly</button>
+          </div>
+        </div>
+        <div style="height:360px"><canvas id="equityChart" aria-label="Equity chart"></canvas></div>
+        <div class="grid cols-4" style="margin-top:12px">
+          <div class="kpi"><div class="label">Starting Equity</div><div class="value" id="startEquity">0R</div></div>
+          <div class="kpi"><div class="label">Current Equity</div><div class="value" id="currEquity">0R</div></div>
+          <div class="kpi"><div class="label">Peak Equity</div><div class="value" id="peakEquity">0R</div></div>
+          <div class="kpi"><div class="label">Max Drawdown</div><div class="value" id="chartDD">0R</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Setup Performance</h3>
+        <div id="setupCards" class="grid cols-3" style="margin-top:10px"></div>
+      </div>
+
+      <div class="grid cols-2">
+        <div class="card">
+          <h3>Daily Outcomes</h3>
+          <div class="grid cols-3" style="margin-top:8px">
+            <div class="kpi"><div class="label">Winning Days</div><div class="value" id="winDays">0 (0%)</div></div>
+            <div class="kpi"><div class="label">Losing Days</div><div class="value" id="loseDays">0 (0%)</div></div>
+            <div class="kpi"><div class="label">Breakeven Days</div><div class="value" id="beDays">0 (0%)</div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Periodic Average R</h3>
+          <div class="grid cols-3" style="margin-top:8px">
+            <div class="kpi"><div class="label">Daily Avg</div><div class="value" id="avgDaily">0R</div></div>
+            <div class="kpi"><div class="label">Weekly Avg</div><div class="value" id="avgWeekly">0R</div></div>
+            <div class="kpi"><div class="label">Monthly Avg</div><div class="value" id="avgMonthly">0R</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid cols-2">
+        <div class="card">
+          <h3>Losing Streak Frequency (≥2) — by Trades</h3>
+          <div style="overflow:auto; max-height:260px; margin-top:8px">
+            <table id="streakTable">
+              <thead><tr><th>Consecutive Losing Trades</th><th>Count</th></tr></thead>
+              <tbody id="streakBody"><tr><td colspan="2" class="muted" style="text-align:center">No data</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Monthly Performance</h3>
+          <div style="overflow:auto; max-height:260px; margin-top:8px">
+            <table id="monthlyTable">
+              <thead>
+                <tr><th>Month</th><th>Trades</th><th>Net</th><th>Win %</th><th>Exp</th><th>Max DD</th></tr>
+              </thead>
+              <tbody id="monthlyBody"><tr><td colspan="6" class="muted" style="text-align:center">No data</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Toasts -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ========= State =========
+    const SETUPS = ["Breakout","Reversal","Engulfing"];
+    let currentDate = new Date().toISOString().slice(0,10);
+    let currentSetup = SETUPS[0];
+    // Shape: dailyData[date] = { note: string, _events: [{setup, outcome:'W'|'L'}], [setup]:{wins,losses} }
+    let dailyData = {};
+    let currentFileName = null;
+    let equityChart = null;
+    let granularity = 'daily';
+    let reportStartDate = null, reportEndDate = null;
+    let rValue = 1; // $ per R when unit=$
+    let unit = 'R'; // 'R' or '$'
+    const undoStack = [];
+
+    // ========= Helpers =========
+    const $ = (sel)=>document.querySelector(sel);
+    const $$ = (sel)=>document.querySelectorAll(sel);
+    const fmt = (n, d=2)=>Number(n).toFixed(d);
+    const toUnit = (val)=> unit==='R' ? `${fmt(val,2)}R` : `$${fmt(val*rValue,2)}`;
+    const isInputFocused = ()=> {
+      const a = document.activeElement;
+      return a && (a.tagName==='INPUT' || a.tagName==='TEXTAREA' || a.isContentEditable);
+    };
+
+    function pushUndo(action){ undoStack.push(action); if(undoStack.length>10) undoStack.shift(); }
+    function showToast(message, withUndo){
+      const box = $('#toast');
+      const t = document.createElement('div');
+      t.className='t';
+      t.textContent = message;
+      if(withUndo){
+        const u = document.createElement('span');
+        u.className='undo';
+        u.textContent='Undo';
+        u.onclick = ()=>{ try { withUndo(); } finally { box.removeChild(t); } };
+        t.appendChild(u);
+      }
+      box.appendChild(t);
+      setTimeout(()=>{ if(t.isConnected) box.removeChild(t); }, 3000);
+    }
+
+    function saveLocal(){
+      const payload = {dailyData, currentDate, currentFileName, rValue, unit, reportStartDate, reportEndDate, version:'2.2'};
+      localStorage.setItem('tt_desktop', JSON.stringify(payload));
+      $('#fileBadge').textContent = currentFileName ? `File: ${currentFileName}` : 'Unsaved';
+    }
+    function loadLocal(){
+      try{
+        const raw = localStorage.getItem('tt_desktop');
+        if(!raw) return;
+        const data = JSON.parse(raw);
+        dailyData = data.dailyData || {};
+        currentDate = data.currentDate || currentDate;
+        currentFileName = data.currentFileName || null;
+        rValue = data.rValue ?? 1;
+        unit = data.unit || 'R';
+        reportStartDate = data.reportStartDate || null;
+        reportEndDate = data.reportEndDate || null;
+      }catch(e){ console.warn('Autosave load failed', e); }
+    }
+
+    // ========= Date utils =========
+    function setDate(d){
+      currentDate = d;
+      $('#dateInput').value = currentDate;
+      updateBacktestView();
+      saveLocal();
+    }
+    function changeDate(delta){
+      const dt = new Date(currentDate);
+      dt.setDate(dt.getDate()+delta);
+      setDate(dt.toISOString().slice(0,10));
+    }
+    function getISOWeek(dateStr){
+      const date = new Date(dateStr);
+      const day = (date.getUTCDay()||7);
+      date.setUTCDate(date.getUTCDate() + 4 - day);
+      const yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
+      return Math.ceil((((date - yearStart)/86400000)+1)/7);
+    }
+    function weekKey(dateStr){
+      const d = new Date(dateStr);
+      return `${d.getFullYear()}-W${String(getISOWeek(dateStr)).padStart(2,'0')}`;
+    }
+    function quarterKey(dateStr){
+      const d = new Date(dateStr);
+      const q = Math.floor(d.getMonth()/3)+1;
+      return `${d.getFullYear()}-Q${q}`;
+    }
+
+    // ========= Data access =========
+    function ensureDay(date){
+      if(!dailyData[date]) dailyData[date]={};
+      if(!('note' in dailyData[date])) dailyData[date].note='';
+      if(!('_events' in dailyData[date])) dailyData[date]._events=[];
+    }
+
+    function record(type){
+      ensureDay(currentDate);
+      if(!dailyData[currentDate][currentSetup]) dailyData[currentDate][currentSetup]={wins:0, losses:0};
+
+      // push undo snapshot
+      const snapshot = JSON.parse(JSON.stringify(dailyData[currentDate]));
+      pushUndo(()=>{
+        dailyData[currentDate] = snapshot;
+        updateBacktestView(); updateReportView(); saveLocal();
+      });
+      showToast(`${type==='win'?'+2R win':'-1R loss'} • ${currentSetup} • ${currentDate}`);
+
+      // mutate
+      if(type==='win'){ dailyData[currentDate][currentSetup].wins++; dailyData[currentDate]._events.push({setup:currentSetup, outcome:'W'}); }
+      else { dailyData[currentDate][currentSetup].losses++; dailyData[currentDate]._events.push({setup:currentSetup, outcome:'L'}); }
+
+      updateBacktestView(); updateReportView(); saveLocal();
+    }
+
+    function deleteEntry(date, setup){
+      if(!(dailyData[date] && dailyData[date][setup])) return;
+      const snapshot = JSON.parse(JSON.stringify(dailyData));
+      pushUndo(()=>{ dailyData = snapshot; updateBacktestView(); updateReportView(); saveLocal(); });
+      delete dailyData[date][setup];
+      if(dailyData[date]._events){
+        dailyData[date]._events = dailyData[date]._events.filter(ev=> ev.setup !== setup);
+      }
+      if(Object.keys(dailyData[date]).filter(k=>k!=='note' && k!=='_events').length===0) delete dailyData[date];
+      showToast(`Deleted ${setup} for ${date}`);
+      updateBacktestView(); updateReportView(); saveLocal();
+    }
+
+    function resetDay(){
+      if(!dailyData[currentDate]) return;
+      const snapshot = JSON.parse(JSON.stringify(dailyData));
+      pushUndo(()=>{ dailyData = snapshot; updateBacktestView(); updateReportView(); saveLocal(); });
+      delete dailyData[currentDate];
+      showToast(`Reset ${currentDate}`);
+      updateBacktestView(); updateReportView(); saveLocal();
+    }
+
+    function resetAll(){
+      if(Object.keys(dailyData).length===0) return;
+      const snapshot = JSON.parse(JSON.stringify(dailyData));
+      pushUndo(()=>{ dailyData = snapshot; updateBacktestView(); updateReportView(); saveLocal(); });
+      dailyData={};
+      showToast(`All data cleared`);
+      updateBacktestView(); updateReportView(); saveLocal();
+    }
+
+    // ========= Filters =========
+    function filteredData(){
+      if(!reportStartDate || !reportEndDate) return dailyData;
+      const out = {};
+      for(const d of Object.keys(dailyData)){
+        if(d>=reportStartDate && d<=reportEndDate){
+          out[d] = dailyData[d];
+        }
+      }
+      return out;
+    }
+
+    // ========= Calculations =========
+    function aggregate(dataObj){
+      const dates = Object.keys(dataObj).sort();
+      let totalWins=0,totalLoss=0, cum=0, peak=0, maxDD=0;
+      const dailySeries = [];
+      dates.forEach(date=>{
+        let dayR=0;
+        for(const [k,v] of Object.entries(dataObj[date])){
+          if(k==='note' || k==='_events') continue;
+          totalWins += v.wins;
+          totalLoss += v.losses;
+          dayR += (v.wins*2) - (v.losses);
+        }
+        cum += dayR;
+        peak = Math.max(peak, cum);
+        maxDD = Math.max(maxDD, peak - cum);
+        dailySeries.push({date, value:cum});
+      });
+      const trades = totalWins + totalLoss;
+      const netR = (totalWins*2) - totalLoss;
+      const exp = trades>0 ? netR/trades : 0;
+      return {dates, totalWins, totalLoss, trades, netR, exp, maxDD, dailySeries};
+    }
+
+    function groupBy(series, gran){
+      if(gran==='daily') return {labels: series.map(d=>d.date), values: series.map(d=>d.value)};
+      const map={};
+      series.forEach(pt=>{
+        let key = gran==='weekly' ? weekKey(pt.date) : pt.date.slice(0,7);
+        map[key] = pt.value; // last value in the bucket
+      });
+      return {labels:Object.keys(map), values:Object.values(map)};
+    }
+
+    function buildTradeSequence(dataObj){
+      const dates = Object.keys(dataObj).sort();
+      const seq = []; // 'W' or 'L'
+      dates.forEach(date=>{
+        const day = dataObj[date];
+        if(day._events && day._events.length){
+          day._events.forEach(ev=> seq.push(ev.outcome));
+        }else{
+          // synthesize sequence from totals to avoid bias
+          let w=0, l=0;
+          for(const [k,v] of Object.entries(day)){
+            if(k==='note' || k==='_events') continue;
+            w += v.wins || 0;
+            l += v.losses || 0;
+          }
+          while(w>0 || l>0){
+            if(l > w && l>0){ seq.push('L'); l--; }
+            else if(w>0){ seq.push('W'); w--; }
+            else if(l>0){ seq.push('L'); l--; }
+          }
+        }
+      });
+      return seq;
+    }
+
+    function computeLosingTradeStreaks(dataObj){
+      const seq = buildTradeSequence(dataObj);
+      const freq = {};
+      let cur = 0;
+      seq.forEach(out=>{
+        if(out==='L'){ cur++; }
+        else {
+          if(cur>=2){ freq[cur] = (freq[cur]||0)+1; }
+          cur = 0;
+        }
+      });
+      if(cur>=2){ freq[cur] = (freq[cur]||0)+1; }
+      return freq;
+    }
+
+    // ========= UI Updates =========
+    function updateHUD(){
+      $('#fileBadge').textContent = currentFileName ? `File: ${currentFileName}` : 'Unsaved';
+      $('#dateInput').value = currentDate;
+    }
+
+    function updateBacktestView(){
+      updateHUD();
+
+      // note field
+      ensureDay(currentDate);
+      $('#dayNote').value = dailyData[currentDate]?.note || '';
+      $('#dayNote').oninput = ()=>{
+        ensureDay(currentDate);
+        dailyData[currentDate].note = $('#dayNote').value.slice(0, 1000);
+        saveLocal();
+      };
+
+      // compute current day aggregates
+      let W=0,L=0;
+      const dayObj = dailyData[currentDate] || {};
+      Object.entries(dayObj).forEach(([k,v])=>{
+        if(k==='note' || k==='_events') return;
+        W += v.wins; L += v.losses;
+      });
+      const T = W+L;
+      const dayR = (W*2)-L;
+      const WR = T>0 ? (W/T*100) : 0;
+      const EXP = T>0 ? dayR/T : 0;
+
+      $('#dayLabel').textContent = currentDate;
+      $('#wins').textContent = W;
+      $('#losses').textContent = L;
+      $('#total').textContent = T;
+      $('#winRate').textContent = `${fmt(WR,1)}%`;
+      $('#totalR').textContent = `${fmt(dayR,1)}R`;
+      $('#expectancy').textContent = `${fmt(EXP,2)}R`;
+
+      // Today table
+      const body = $('#todayTableBody');
+      body.innerHTML = '';
+      let sumW=0, sumL=0;
+      const setupsOnly = Object.keys(dayObj).filter(k=>k!=='note' && k!=='_events');
+      if(setupsOnly.length===0){
+        body.innerHTML = `<tr><td colspan="9" class="muted" style="text-align:center">No data for this day yet</td></tr>`;
+      } else {
+        for(const setup of setupsOnly){
+          const v = dayObj[setup];
+          const w=v.wins, l=v.losses, t=w+l;
+          const r=(w*2)-l, wr=t? (w/t*100):0, exp=t? r/t:0;
+          sumW+=w; sumL+=l;
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${currentDate}</td>
+            <td>${setup}</td>
+            <td>${w}</td>
+            <td>${l}</td>
+            <td>${t}</td>
+            <td>${fmt(wr,1)}%</td>
+            <td>${fmt(r,1)}R</td>
+            <td>${fmt(exp,2)}R</td>
+            <td><button class="icon-btn" title="Delete" data-del="${setup}">🗑️</button></td>
+          `;
+          body.appendChild(tr);
+        }
+      }
+      // summary
+      const allT = sumW+sumL;
+      const allR = (sumW*2)-sumL;
+      const allWR = allT? (sumW/allT*100):0;
+      const allExp = allT? allR/allT:0;
+      $('#sumWins').textContent = sumW;
+      $('#sumLosses').textContent = sumL;
+      $('#sumTotal').textContent = allT;
+      $('#sumWinRate').textContent = `${fmt(allWR,1)}%`;
+      $('#sumR').textContent = `${fmt(allR,1)}R`;
+      $('#sumExp').textContent = `${fmt(allExp,2)}R`;
+
+      // wire delete buttons
+      body.querySelectorAll('[data-del]').forEach(btn=>{
+        btn.onclick = ()=> deleteEntry(currentDate, btn.getAttribute('data-del'));
+      });
+    }
+
+    function updateReportView(){
+      updateHUD();
+      const data = filteredData();
+      const agg = aggregate(data);
+
+      // KPIs (first row)
+      $('#kpiTrades').textContent = agg.trades;
+      $('#kpiNet').textContent = toUnit(agg.netR);
+      $('#kpiWR').textContent = `${fmt(agg.trades? (agg.totalWins/agg.trades*100):0,1)}%`;
+      $('#kpiExp').textContent = toUnit(agg.exp);
+      $('#kpiDD').textContent = toUnit(agg.maxDD);
+
+      // Spans + Avg trades/day (second row)
+      const dates = Object.keys(data).sort();
+      if(dates.length>0){
+        const minD = new Date(dates[0]);
+        const maxD = new Date(dates[dates.length-1]);
+        const daySpan = Math.floor((maxD - minD)/86400000) + 1;
+        const months = new Set(dates.map(d=>d.slice(0,7)));
+        const quarters = new Set(dates.map(d=>quarterKey(d)));
+        const years = new Set(dates.map(d=>new Date(d).getFullYear()));
+        const activeDays = dates.length; // days with entries
+        const avgPerDay = activeDays>0 ? agg.trades/activeDays : 0;
+
+        $('#kpiDaySpan').textContent = daySpan;
+        $('#kpiMonthSpan').textContent = months.size;
+        $('#kpiQuarterSpan').textContent = quarters.size;
+        $('#kpiYearSpan').textContent = years.size;
+        $('#kpiAvgPerDay').textContent = fmt(avgPerDay,2);
+      }else{
+        $('#kpiDaySpan').textContent = 0;
+        $('#kpiMonthSpan').textContent = 0;
+        $('#kpiQuarterSpan').textContent = 0;
+        $('#kpiYearSpan').textContent = 0;
+        $('#kpiAvgPerDay').textContent = '0.00';
+      }
+
+      // Equity Chart
+      const ctx = $('#equityChart').getContext('2d');
+      if(!equityChart){
+        equityChart = new Chart(ctx,{
+          type:'line',
+          data:{labels:[], datasets:[{label:'Cumulative Equity', data:[], fill:true, tension:.15, borderWidth:2}]},
+          options:{
+            responsive:true, maintainAspectRatio:false,
+            scales:{
+              x:{grid:{color:'#2b315d'}},
+              y:{grid:{color:'#2b315d'}, ticks:{callback:(v)=> unit==='R'? `${v}R` : `$${fmt(v,0)}`}}
+            },
+            plugins:{
+              legend:{labels:{color:'#cfd2e6'}},
+              tooltip:{callbacks:{label:(ctx)=>`Equity: ${ unit==='R' ? `${fmt(ctx.parsed.y,2)}R` : `$${fmt(ctx.parsed.y,2)}`}`}}
+            }
+          }
+        });
+      }
+      const g = granularity;
+      const grouped = groupBy(agg.dailySeries, g);
+      equityChart.data.labels = grouped.labels;
+      equityChart.data.datasets[0].data = grouped.values.map(v=> unit==='R' ? v : v*rValue);
+      const good = '#27be69', bad='#ff5a6b', neu='#ffc857';
+      const color = agg.netR>0?good:(agg.netR<0?bad:neu);
+      equityChart.data.datasets[0].borderColor = color;
+      equityChart.data.datasets[0].backgroundColor = color+'22';
+      equityChart.update();
+
+      // Chart KPIs
+      const totalEquity = agg.dailySeries.length? agg.dailySeries[agg.dailySeries.length-1].value : 0;
+      const peak = (()=>{ let p=0; agg.dailySeries.forEach(pt=>{ p=Math.max(p,pt.value); }); return p; })();
+      $('#startEquity').textContent = toUnit(0);
+      $('#currEquity').textContent = toUnit(totalEquity);
+      $('#peakEquity').textContent = toUnit(peak);
+      $('#chartDD').textContent = toUnit(agg.maxDD);
+
+      // Setup cards
+      const container = $('#setupCards');
+      container.innerHTML='';
+      const statsBySetup = {};
+      SETUPS.forEach(s=> statsBySetup[s]={wins:0, losses:0});
+      for(const d of Object.keys(data)){
+        for(const [k,v] of Object.entries(data[d])){
+          if(k==='note' || k==='_events') continue;
+          if(!statsBySetup[k]) statsBySetup[k]={wins:0, losses:0};
+          statsBySetup[k].wins += v.wins;
+          statsBySetup[k].losses += v.losses;
+        }
+      }
+      SETUPS.forEach(s=>{
+        const st = statsBySetup[s] || {wins:0, losses:0};
+        const t = st.wins+st.losses;
+        if(t===0) return;
+        const r = (st.wins*2)-st.losses;
+        const wr = t? (st.wins/t*100):0;
+        const exp = t? (r/t):0;
+        const card = document.createElement('div');
+        card.className='kpi';
+        card.innerHTML = `
+          <div class="label">${s}</div>
+          <div class="value">${toUnit(r)}</div>
+          <div class="muted" style="margin-top:6px">Trades: <b>${t}</b> • Win%: <b>${fmt(wr,1)}%</b> • Exp: <b>${toUnit(exp)}</b></div>
+        `;
+        container.appendChild(card);
+      });
+      if(container.children.length===0){
+        container.innerHTML = `<div class="muted">No setup data in the selected range.</div>`;
+      }
+
+      // Daily outcomes (by day net)
+      const days = Object.keys(data).sort();
+      let win=0, lose=0, be=0;
+      days.forEach(d=>{
+        let dr=0;
+        for(const [k,v] of Object.entries(data[d])){
+          if(k==='note' || k==='_events') continue;
+          dr += (v.wins*2) - v.losses;
+        }
+        if(dr>0) win++; else if(dr<0) lose++; else be++;
+      });
+      const totalDays = days.length || 1;
+      $('#winDays').textContent = `${win} (${fmt(win/totalDays*100,1)}%)`;
+      $('#loseDays').textContent = `${lose} (${fmt(lose/totalDays*100,1)}%)`;
+      $('#beDays').textContent = `${be} (${fmt(be/totalDays*100,1)}%)`;
+
+      // Periodic averages
+      let totalR=0, weeks=new Set(), months=new Set();
+      days.forEach(d=>{
+        let dr=0;
+        for(const [k,v] of Object.entries(data[d])){ if(k!=='note' && k!=='_events') dr += (v.wins*2)-v.losses; }
+        totalR += dr;
+        weeks.add(weekKey(d)); months.add(d.slice(0,7));
+      });
+      const dAvg = days.length? totalR/days.length : 0;
+      const wAvg = weeks.size? totalR/weeks.size : 0;
+      const mAvg = months.size? totalR/months.size : 0;
+      $('#avgDaily').textContent = toUnit(dAvg);
+      $('#avgWeekly').textContent = toUnit(wAvg);
+      $('#avgMonthly').textContent = toUnit(mAvg);
+
+      // Losing streaks by TRADES (≥2)
+      const tbody = $('#streakBody'); tbody.innerHTML='';
+      const freq = computeLosingTradeStreaks(data);
+      const keys = Object.keys(freq).map(n=>+n).sort((a,b)=>a-b);
+      if(keys.length===0){
+        tbody.innerHTML = `<tr><td colspan="2" class="muted" style="text-align:center">No losing streaks of 2+ trades</td></tr>`;
+      }else{
+        keys.forEach(k=>{
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${k}</td><td>${freq[k]}</td>`;
+          tbody.appendChild(tr);
+        });
+      }
+
+      // Monthly table
+      const mBody = $('#monthlyBody'); mBody.innerHTML='';
+      const monthly = {};
+      days.forEach(d=>{
+        const m = d.slice(0,7);
+        if(!monthly[m]) monthly[m]={wins:0, losses:0, cum:0, peak:0, dd:0};
+        let dr=0;
+        for(const [k,v] of Object.entries(data[d])){
+          if(k!=='note' && k!=='_events'){ monthly[m].wins+=v.wins; monthly[m].losses+=v.losses; dr += (v.wins*2)-v.losses; }
+        }
+        monthly[m].cum += dr;
+        monthly[m].peak = Math.max(monthly[m].peak, monthly[m].cum);
+        monthly[m].dd = Math.max(monthly[m].dd, monthly[m].peak - monthly[m].cum);
+      });
+      const monthsKeys = Object.keys(monthly).sort();
+      if(monthsKeys.length===0){
+        mBody.innerHTML = `<tr><td colspan="6" class="muted" style="text-align:center">No data</td></tr>`;
+      }else{
+        monthsKeys.forEach(m=>{
+          const x = monthly[m];
+          const trades = x.wins + x.losses;
+          const net = (x.wins*2)-x.losses;
+          const wr = trades? (x.wins/trades*100):0;
+          const exp = trades? net/trades : 0;
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${m}</td>
+            <td>${trades}</td>
+            <td style="color:${net>0?'var(--green)':net<0?'var(--red)':'var(--amber)'}">${toUnit(net)}</td>
+            <td>${fmt(wr,1)}%</td>
+            <td style="color:${exp>0?'var(--green)':exp<0?'var(--red)':'var(--amber)'}">${toUnit(exp)}</td>
+            <td style="color:var(--red)">${toUnit(x.dd)}</td>
+          `;
+          mBody.appendChild(tr);
+        });
+      }
+    }
+
+    // ========= File I/O =========
+    function saveToFile(){
+      const name = prompt('Save as (file name, no extension):', currentFileName || 'backtest');
+      if(!name) return;
+      if(Object.keys(dailyData).length===0){ alert('No data to save'); return; }
+      const saveData = { fileName:name, data:dailyData, currentDate, savedAt:new Date().toISOString(), version:'2.2' };
+      const blob = new Blob([JSON.stringify(saveData,null,2)], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `${name.replace(/[^a-z0-9]/gi,'_')}_backtest.json`;
+      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+      currentFileName = name; saveLocal();
+      showToast(`Saved “${name}”`);
+    }
+    function loadFromFile(file){
+      const reader = new FileReader();
+      reader.onload = (e)=>{
+        try{
+          const loaded = JSON.parse(e.target.result);
+          if(!loaded.data || !loaded.fileName) { alert('Invalid file format'); return; }
+          if(Object.keys(dailyData).length>0){
+            if(!confirm('Loading will replace current data. Continue?')) return;
+          }
+          dailyData = loaded.data;
+          Object.keys(dailyData).forEach(d=>{
+            if(!dailyData[d]._events) dailyData[d]._events=[];
+            if(dailyData[d].note===undefined) dailyData[d].note='';
+          });
+          currentFileName = loaded.fileName;
+          if(loaded.currentDate) currentDate = loaded.currentDate;
+          saveLocal();
+          updateBacktestView(); updateReportView();
+          showToast(`Loaded “${currentFileName}”`);
+        }catch(err){ alert('Failed to read file'); }
+      };
+      reader.readAsText(file);
+    }
+    function exportCSV(){
+      if(Object.keys(dailyData).length===0){ alert('No data to export'); return; }
+      let csv = 'Date,Setup,Wins,Losses,Total Trades,Win Rate (%),Total R,Expectancy R,Note\n';
+      const dates = Object.keys(dailyData).sort();
+      let allW=0, allL=0;
+      dates.forEach(date=>{
+        const note = (dailyData[date].note || '').replace(/[\n\r,]/g,' ');
+        for(const [setup,v] of Object.entries(dailyData[date])){
+          if(setup==='note' || setup==='_events') continue;
+          const w=v.wins, l=v.losses, t=w+l, r=(w*2)-l, wr=t? (w/t*100):0, exp=t? r/t:0;
+          allW+=w; allL+=l;
+          csv += `${date},${setup},${w},${l},${t},${fmt(wr,1)},${fmt(r,1)},${fmt(exp,2)},${note}\n`;
+        }
+      });
+      const t=allW+allL, r=(allW*2)-allL, wr=t? (allW/t*100):0, exp=t? r/t:0;
+      csv += `\nTOTAL,ALL,${allW},${allL},${t},${fmt(wr,1)},${fmt(r,1)},${fmt(exp,2)},\n`;
+      const blob = new Blob([csv],{type:'text/csv'});
+      const url = URL.createObjectURL(blob);
+      const a=document.createElement('a');
+      const fname = (currentFileName? currentFileName.replace(/[^a-z0-9]/gi,'_') : 'trading_backtest') + `_results_${new Date().toISOString().slice(0,10)}.csv`;
+      a.href=url; a.download=fname; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+      showToast('CSV exported');
+    }
+
+    // ========= Events =========
+    function wireEvents(){
+      // Tabs
+      $('#tabBtn-backtest').onclick = ()=>{ switchTab('backtest'); };
+      $('#tabBtn-report').onclick = ()=>{ switchTab('report'); };
+
+      // Date
+      $('#dateInput').onchange = ()=> setDate($('#dateInput').value||currentDate);
+      $('#prevDay').onclick = ()=> changeDate(-1);
+      $('#nextDay').onclick = ()=> changeDate(1);
+      $('#todayBtn').onclick = ()=> setDate(new Date().toISOString().slice(0,10));
+
+      // Setup
+      document.querySelectorAll('[data-setup]').forEach(btn=>{
+        btn.onclick = ()=>{
+          document.querySelectorAll('[data-setup]').forEach(b=>b.classList.remove('active'));
+          btn.classList.add('active'); currentSetup = btn.getAttribute('data-setup');
+          saveLocal();
+        };
+      });
+
+      // Actions
+      $('#winBtn').onclick = ()=> record('win');
+      $('#loseBtn').onclick = ()=> record('lose');
+      $('#resetDayBtn').onclick = ()=> { if(confirm(`Reset all data for ${currentDate}?`)) resetDay(); };
+      $('#resetAllBtn').onclick = ()=> { if(confirm('Delete ALL data? This cannot be undone.')) resetAll(); };
+
+      // Unit toggles
+      $('#unitR').onclick = ()=>{ unit='R'; $('#unitR').classList.add('active'); $('#unitDollar').classList.remove('active'); updateReportView(); saveLocal(); };
+      $('#unitDollar').onclick = ()=>{
+        unit='$'; $('#unitDollar').classList.add('active'); $('#unitR').classList.remove('active');
+        if(!(rValue>0)){ const v = prompt('Dollar value per 1R (e.g., 50):', rValue||''); const num = parseFloat(v); if(num>0) rValue=num; }
+        $('#rValue').value = rValue>0? rValue : '';
+        updateReportView(); saveLocal();
+      };
+      $('#rValue').onchange = ()=>{ const v=parseFloat($('#rValue').value); if(v>0){ rValue=v; saveLocal(); updateReportView(); } };
+
+      // File
+      $('#saveBtn').onclick = saveToFile;
+      $('#loadBtn').onclick = ()=> $('#loadInput').click();
+      $('#loadInput').onchange = (e)=>{ if(e.target.files[0]) loadFromFile(e.target.files[0]); e.target.value=''; };
+      $('#exportBtn').onclick = exportCSV;
+
+      // Range (Report)
+      $('#applyRange').onclick = ()=>{
+        const s=$('#startDate').value, e=$('#endDate').value;
+        if(!s||!e) return alert('Select both start and end dates');
+        if(s>e) return alert('Start must be before end');
+        reportStartDate=s; reportEndDate=e; saveLocal(); updateReportView();
+      };
+      $('#clearRangeBtn').onclick = ()=>{ reportStartDate=null; reportEndDate=null; $('#startDate').value=''; $('#endDate').value=''; saveLocal(); updateReportView(); };
+
+      // Granularity
+      document.querySelectorAll('#granSeg button').forEach(b=>{
+        b.onclick = ()=>{
+          document.querySelectorAll('#granSeg button').forEach(x=>x.classList.remove('active'));
+          b.classList.add('active'); granularity = b.getAttribute('data-gran'); updateReportView();
+        };
+      });
+
+      // Keyboard shortcuts
+      window.addEventListener('keydown', (e)=>{
+        if(isInputFocused()) return;
+        if(e.key==='w' || e.key==='W'){ record('win'); }
+        else if(e.key==='l' || e.key==='L'){ record('lose'); }
+        else if(e.key==='ArrowLeft'){ changeDate(-1); }
+        else if(e.key==='ArrowRight'){ changeDate(1); }
+        else if(e.key==='1'){ selectSetupIdx(0); }
+        else if(e.key==='2'){ selectSetupIdx(1); }
+        else if(e.key==='3'){ selectSetupIdx(2); }
+        else if(e.key==='s' || e.key==='S'){ e.preventDefault(); saveToFile(); }
+        else if(e.key==='r' || e.key==='R'){ if(confirm(`Reset all data for ${currentDate}?`)) resetDay(); }
+        else if(e.key==='g' || e.key==='G'){ cycleGran(); }
+      });
+    }
+
+    function selectSetupIdx(i){
+      const btns = document.querySelectorAll('[data-setup]');
+      if(!btns[i]) return;
+      btns.forEach(b=>b.classList.remove('active'));
+      btns[i].classList.add('active');
+      currentSetup = btns[i].getAttribute('data-setup');
+      saveLocal();
+    }
+    function cycleGran(){
+      const order=['daily','weekly','monthly'];
+      const idx = order.indexOf(granularity);
+      const next = order[(idx+1)%order.length];
+      document.querySelectorAll('#granSeg button').forEach(b=>{
+        b.classList.toggle('active', b.getAttribute('data-gran')===next);
+      });
+      granularity = next; updateReportView();
+    }
+
+    function switchTab(name){
+      document.querySelectorAll('.appbar .seg[role="tablist"] button').forEach(b=>{
+        b.classList.toggle('active', b.dataset.tab===name);
+        b.setAttribute('aria-selected', b.dataset.tab===name ? 'true':'false');
+      });
+      document.querySelectorAll('.tabcontent').forEach(s=> s.classList.remove('active'));
+      $('#tab-'+name).classList.add('active');
+      if(name==='report') updateReportView(); else updateBacktestView();
+      saveLocal();
+    }
+
+    // ========= Init =========
+    function init(){
+      loadLocal();
+      wireEvents();
+
+      // hydrate controls
+      $('#dateInput').value = currentDate;
+      if(unit==='R'){ $('#unitR').classList.add('active'); $('#unitDollar').classList.remove('active'); }
+      else { $('#unitDollar').classList.add('active'); $('#unitR').classList.remove('active'); $('#rValue').value = rValue>0? rValue : ''; }
+
+      // default active setup button
+      document.querySelectorAll('[data-setup]').forEach(b=>{
+        b.classList.toggle('active', b.getAttribute('data-setup')===currentSetup);
+      });
+
+      updateBacktestView();
+      updateReportView();
+    }
+
+    init();
+  </script>
+</body>
+</html>
